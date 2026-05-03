@@ -16,6 +16,14 @@ export async function initClock() {
 
   updateClock();
   clockInterval = setInterval(updateClock, 1000);
+  window.addEventListener('beforeunload', destroyClock);
+}
+
+function destroyClock() {
+  if (clockInterval) {
+    clearInterval(clockInterval);
+    clockInterval = null;
+  }
 }
 
 function updateClock() {

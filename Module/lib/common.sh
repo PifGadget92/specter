@@ -28,24 +28,6 @@ check_network() {
   return 1
 }
 
-check_module() {
-  _cm_name="$1"
-  if [ ! -d "/data/adb/modules/$_cm_name" ] && [ ! -d "/data/adb/modules_update/$_cm_name" ]; then
-    log "ERROR" "Required module '$1' is not installed"
-    return 1
-  fi
-  return 0
-}
-
-check_command() {
-  _cc_name="$1"
-  if ! command -v "$_cc_name" >/dev/null 2>&1; then
-    log "ERROR" "Required command '$1' not found on this device"
-    return 1
-  fi
-  return 0
-}
-
 check_prop() {
     _cp_name=$1 _cp_expected=$2
     _cp_value=$(resetprop "$_cp_name")
@@ -98,4 +80,96 @@ run_device_info() {
     [ -f "$_rdi_p" ] && sh "$_rdi_p" && return 0
   done
   return 1
+}
+
+_parse_serial() {
+  _h="$1"
+  case "$_h" in 30*) _h="${_h#30}" ;; *) return 1 ;; esac
+  _l_hex="${_h:0:2}" _l_dec=$((16#$_l_hex))
+  [ $_l_dec -ge 128 ] && _h="${_h:2 + ($_l_dec - 128) * 2}" || _h="${_h:2}"
+
+  case "$_h" in 30*) _h="${_h#30}" ;; *) return 1 ;; esac
+  _l_hex="${_h:0:2}" _l_dec=$((16#$_l_hex))
+  [ $_l_dec -ge 128 ] && _h="${_h:2 + ($_l_dec - 128) * 2}" || _h="${_h:2}"
+
+  case "$_h" in
+    a0*)
+      _ctx_len_hex="${_h:2:2}"
+      _ctx_len=$((16#$_ctx_len_hex))
+      _h="${_h:4 + _ctx_len * 2}"
+      ;;
+  esac
+
+  case "$_h" in 02*) _h="${_h#02}" ;; *) return 1 ;; esac
+  _l_hex="${_h:0:2}" _l_dec=$((16#$_l_hex))
+  if [ $_l_dec -ge 128 ]; then
+    _n=$((_l_dec - 128))
+    _sl=$((16#${_h:2:_n * 2}))
+    _serial_hex="${_h:2 + _n * 2:$_sl * 2}"
+  else
+    _serial_hex="${_h:2:$_l_dec * 2}"
+  fi
+
+  _serial=$(echo "$_serial_hex" | sed 's/^0*//')
+  [ -z "$_serial" ] && _serial="0"
+  return 0
+}
+
+decode_keybox_serial() {
+  _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' "$1" | head -20 | grep -v 'CERTIFICATE' | tr -d '\n')
+  [ -z "$_b64" ] && return 1
+  _hex=$(echo "$_b64" | base64 -d 2>/dev/null | od -v -tx1 | awk 'BEGIN{ORS=""} {for(i=2;i<=NF;i++) printf "%s", $i}')
+  [ -z "$_hex" ] && return 1
+  _parse_serial "$_hex" || return 1
+  echo "$_serial"
+}
+
+apply_prop_hardening() {
+  check_prop "ro.build.fingerprint" ""
+  check_prop "ro.boot.vbmeta.device_state" "locked"
+  check_prop "ro.boot.verifiedbootstate" "green"
+  check_prop "ro.boot.flash.locked" "1"
+  check_prop "ro.boot.veritymode" "enforcing"
+  check_prop "ro.boot.warranty_bit" "0"
+  check_prop "ro.warranty_bit" "0"
+  check_prop "ro.debuggable" "0"
+  check_prop "ro.secure" "1"
+  check_prop "ro.adb.secure" "1"
+  check_prop "ro.build.type" "user"
+  check_prop "ro.build.tags" "release-keys"
+  check_prop "ro.system.build.tags" "release-keys"
+  check_prop "ro.vendor.build.tags" "release-keys"
+  check_prop "ro.omni.build.type" "user"
+  check_prop "ro.mediatek.platform" ""
+  check_prop "ro.mediatek.chip_ver" ""
+  check_prop "ro.mediatek.version" ""
+  check_prop "ro.mediatek.model" ""
+  check_prop "ro.vendor.mediatek.platform" ""
+  check_prop "ro.vendor.mediatek.chip_ver" ""
+  check_prop "persist.sys.fflag.override.settings_provider_model" ""
+  check_prop "persist.sys.pixelprops.piunormal" ""
+  check_prop "ro.boot.secboot" "enforcing"
+}
+
+find_kmInstallKeybox() {
+  _fk_abi=$(getprop ro.product.cpu.abi 2>/dev/null || echo "arm64")
+  _fk_lib_dir="/vendor/lib64"
+  [ "$_fk_abi" != "arm64" ] && [ "$_fk_abi" != "x86_64" ] && _fk_lib_dir="/vendor/lib"
+  _fk_bin=""
+  for _fk_dir in "$_fk_lib_dir/hw" "$_fk_lib_dir"; do
+    _fk_bin=$(find "$_fk_dir" -name "*kmInstallKeybox*" 2>/dev/null | head -1)
+    [ -n "$_fk_bin" ] && break
+  done
+  echo "${_fk_bin:-}"
+  unset _fk_abi _fk_lib_dir _fk_bin _fk_dir
+}
+
+resolve_module_root() {
+  MODDIR="${0%/*}"
+  if echo "$MODDIR" | grep -q "webroot/common"; then
+    MODULE_ROOT="${MODDIR%/webroot/common}"
+  else
+    MODULE_ROOT="$MODDIR"
+  fi
+  echo "$MODULE_ROOT"
 }

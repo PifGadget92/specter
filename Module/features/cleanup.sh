@@ -71,25 +71,17 @@ _rm "/dev/cpuset/scene-daemon"
 
 pm clear com.juom >/dev/null 2>&1 || true
 
+apply_prop_hardening
+
 check_prop "sys.usb.adb.disabled" "1"
 check_prop "persist.sys.usb.config" "mtp"
 check_prop "sys.usb.config" "mtp"
 check_prop "sys.usb.state" "mtp"
 check_prop "service.adb.root" "0"
-check_prop "ro.debuggable" "0"
-check_prop "ro.secure" "1"
-check_prop "ro.adb.secure" "1"
-check_prop "ro.build.type" "user"
-check_prop "ro.build.tags" "release-keys"
-check_prop "ro.boot.verifiedbootstate" "green"
 check_prop "vendor.boot.verifiedbootstate" "green"
-check_prop "ro.boot.flash.locked" "1"
-check_prop "ro.boot.vbmeta.device_state" "locked"
 check_prop "vendor.boot.vbmeta.device_state" "locked"
 check_prop "ro.secureboot.lockstate" "locked"
-check_prop "ro.boot.warranty_bit" "0"
 check_prop "ro.boot.realme.lockstate" "1"
-check_prop "ro.boot.veritymode" "enforcing"
 check_prop "ro.oem_unlock_supported" "0"
 check_prop "sys.oem_unlock_allowed" "0"
 check_prop "ro.kernel.qemu" "0"

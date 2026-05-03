@@ -1,9 +1,9 @@
 let MODULE = null;
 let cache = {};
 let flushTimer = null;
+let pendingFlush = [];
 
 export function setModuleDir(path) { MODULE = path; }
-export function getModuleDir() { return MODULE; }
 
 async function readConfig(key) {
   if (!MODULE) return null;
@@ -19,7 +19,7 @@ function writeConfig(key, val) {
   const cmd =
     `ksud module config set "${key}" "${val}" 2>/dev/null || ` +
     `mkdir -p "${MODULE}/config" && printf '%s' "${val}" > "${MODULE}/config/${key}.val"`;
-  import('./bridge.js').then(({ exec }) => exec(cmd));
+  import('./bridge.js').then(({ exec }) => exec(cmd)).catch(err => console.warn('Config write failed for', key, err));
 }
 
 function deleteConfig(key) {
@@ -38,17 +38,25 @@ export async function cfgGet(key, defaultValue) {
 
 export function cfgSet(key, val) {
   cache[key] = val;
+  pendingFlush.push({ key, val });
   if (flushTimer) clearTimeout(flushTimer);
   flushTimer = setTimeout(() => {
     flushTimer = null;
-    writeConfig(key, val);
+    const batch = pendingFlush;
+    pendingFlush = [];
+    for (const { key: k, val: v } of batch) {
+      writeConfig(k, v);
+    }
   }, 500);
 }
 
-export function cfgDelete(key) {
-  delete cache[key];
-  deleteConfig(key);
-}
+window.addEventListener('beforeunload', () => {
+  if (flushTimer) clearTimeout(flushTimer);
+  for (const { key, val } of pendingFlush) {
+    writeConfig(key, val);
+  }
+  pendingFlush = [];
+});
 
 export async function migrateLocalStorage() {
   try {
@@ -67,5 +75,7 @@ export async function migrateLocalStorage() {
       }
     }
     localStorage.setItem('_cfg_migrated', '1');
-  } catch { }
+  } catch (e) {
+    console.warn('Migration failed:', e);
+  }
 }

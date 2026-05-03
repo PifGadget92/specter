@@ -1,5 +1,7 @@
 #!/system/bin/sh
-SCRIPT_DIR="${0%/*}"
+. /data/adb/modules/Specter/lib/common.sh 2>/dev/null
+MODULE_ROOT=$(resolve_module_root)
+SCRIPT_DIR="$MODULE_ROOT/webroot/common"
 FW_DIR="$SCRIPT_DIR/FixWidevineL1"
 
 if [ ! -d "$FW_DIR" ]; then

@@ -7,7 +7,7 @@ export async function initI18n() {
   try {
     const res = await fetch(`lang/source/string.json?ts=${Date.now()}`);
     fallbackStrings = await res.json();
-  } catch { fallbackStrings = {}; }
+  } catch { fallbackStrings = {}; } /* fetch/parse fallback */
 
   const saved = await cfgGet('lang', 'en') || 'en';
   await applyLanguage(saved, true);
@@ -22,21 +22,18 @@ export async function applyLanguage(langCode) {
   try {
     const res = await fetch(url);
     currentStrings = await res.json();
-  } catch {
+  } catch { /* fetch/parse fallback */
     currentStrings = {};
   }
 
   applyTranslations();
   cfgSet('lang', langCode);
+  document.documentElement.dir = langCode === 'ar' ? 'rtl' : 'ltr';
   document.dispatchEvent(new CustomEvent('languageChanged', { detail: { langCode } }));
 }
 
 export function getTranslation(key) {
   return currentStrings[key] || fallbackStrings[key] || null;
-}
-
-export function getStrings() {
-  return currentStrings;
 }
 
 function applyTranslations() {
@@ -63,6 +60,13 @@ function applyTranslations() {
       while (el.firstChild) el.removeChild(el.firstChild);
       el.appendChild(document.createTextNode(val));
     }
+  });
+
+  document.querySelectorAll('md-filter-chip[data-preset]').forEach(chip => {
+    const preset = chip.dataset.preset;
+    const key = 'theme_preset_' + preset;
+    const val = currentStrings[key] || fallbackStrings[key];
+    if (val) chip.label = val;
   });
 }
 
@@ -106,7 +110,7 @@ function wireLanguageSelect(currentLang) {
     select.appendChild(item);
   });
 
-  await new Promise(r => setTimeout(r, 0));
+  await new Promise(r => requestAnimationFrame(r));
   select.value = currentLang;
   });
 }

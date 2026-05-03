@@ -5,16 +5,19 @@ import { initDevice, refreshDevice, refreshKeyboxStatus } from './device.js';
 import { initClock } from './clock.js';
 import { initNetwork } from './network.js';
 import { initTheme } from './theme.js';
-import { initI18n } from './i18n.js';
+import { initI18n, getTranslation } from './i18n.js';
 import { loadContributors } from './contributors.js';
 import { initRedirect } from './redirect.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, shellEscape } from './utils.js';
 import { openRecentActivity, addEntry } from './history.js';
-import { showToast } from './toast.js';
+import { showToast, closeToast } from './toast.js';
 import { initTerminal, appendToOutput } from './terminal.js';
+import { openFileBrowser } from './file-browser.js';
+import { showErrorDialog } from './dialog.js';
+import { setFriendlyNames, getFriendlyName } from './state.js';
+import { API_URLS } from './constants.js';
 
 let devMode = false;
-let friendlyNames = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -33,12 +36,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireKeyboxCard();
   wireRefreshButton();
   wireCustomKeybox();
+  wireKeyboxInstallButton();
   await initI18n();
-  initClock();
-  initNetwork();
+  Promise.all([initClock(), initNetwork(), populateProviders(), loadContributors()]).catch(err => console.warn('Init error:', err));
   await initDevice();
-  populateProviders();
-  loadContributors();
   initRedirect();
   buildFriendlyNames();
 
@@ -52,10 +53,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function wireTopBarScroll() {
   const topBar = document.getElementById('top-bar');
-  const main = document.querySelector('main');
-  if (!topBar || !main) return;
-  main.addEventListener('scroll', () => {
-    topBar.classList.toggle('top-bar--scrolled', main.scrollTop > 0);
+  if (!topBar) return;
+  window.addEventListener('scroll', () => {
+    topBar.classList.toggle('app-top-bar--scrolled', window.scrollY > 0);
   });
 }
 
@@ -105,16 +105,13 @@ function wireNavigation() {
 }
 
 function buildFriendlyNames() {
+  const names = {};
   document.querySelectorAll('.list-item[data-script]').forEach(item => {
     const scriptName = item.dataset.script;
     const headline = item.querySelector('.toggle-text[data-i18n]');
-    if (headline) friendlyNames[scriptName] = headline.dataset.i18n;
+    if (headline) names[scriptName] = headline.dataset.i18n;
   });
-  window.__friendlyNames = friendlyNames;
-}
-
-function getFriendlyName(scriptName) {
-  return friendlyNames[scriptName] || scriptName;
+  setFriendlyNames(names);
 }
 
 function wireDevMode() {
@@ -152,7 +149,6 @@ function wireActions() {
 
 async function runDevAction(scriptName, item, spinner) {
   const lines = [];
-  const { getTranslation } = await import('./i18n.js');
   appendToOutput(`> ${scriptName}`);
   const dialog = document.createElement('md-dialog');
   dialog.innerHTML = `
@@ -190,7 +186,6 @@ async function runDevAction(scriptName, item, spinner) {
 }
 
 async function runSimpleAction(scriptName, item, spinner) {
-  const { getTranslation } = await import('./i18n.js');
   const i18nKey = getFriendlyName(scriptName);
   const friendlyName = getTranslation(i18nKey) || i18nKey;
   const lines = [];
@@ -219,18 +214,7 @@ async function runSimpleAction(scriptName, item, spinner) {
         action: getTranslation('simple_toast_view_details') || 'View Details',
         autoCloseDelay: 8000,
         onActionClick: () => {
-          const errDialog = document.createElement('md-dialog');
-          errDialog.innerHTML = `
-            <div slot="headline">${getTranslation('error_dialog_title') || 'Error Details'}</div>
-            <div slot="content"><div class="terminal"><pre>${escapeHtml(lines.join('\n'))}</pre></div></div>
-            <div slot="actions">
-              <md-text-button class="dialog-close">${getTranslation('dialog_close') || 'Close'}</md-text-button>
-            </div>
-          `;
-          document.body.appendChild(errDialog);
-          errDialog.querySelector('.dialog-close').addEventListener('click', () => errDialog.close());
-          errDialog.addEventListener('close', () => document.body.removeChild(errDialog));
-          errDialog.show();
+          showErrorDialog(getTranslation('error_dialog_title') || 'Error Details', escapeHtml(lines.join('\n')));
         },
       });
     } else {
@@ -249,18 +233,7 @@ async function runSimpleAction(scriptName, item, spinner) {
       action: getTranslation('simple_toast_view_details') || 'View Details',
       autoCloseDelay: 8000,
       onActionClick: () => {
-        const errDialog = document.createElement('md-dialog');
-        errDialog.innerHTML = `
-          <div slot="headline">${getTranslation('error_dialog_title') || 'Error Details'}</div>
-          <div slot="content"><div class="terminal"><pre>${escapeHtml(msg)}</pre></div></div>
-          <div slot="actions">
-            <md-text-button class="dialog-close">${getTranslation('dialog_close') || 'Close'}</md-text-button>
-          </div>
-        `;
-        document.body.appendChild(errDialog);
-        errDialog.querySelector('.dialog-close').addEventListener('click', () => errDialog.close());
-        errDialog.addEventListener('close', () => document.body.removeChild(errDialog));
-        errDialog.show();
+        showErrorDialog(getTranslation('error_dialog_title') || 'Error Details', escapeHtml(msg));
       },
     });
   });
@@ -285,31 +258,12 @@ function wireKeyboxCard() {
   });
 }
 
-const PROVIDERS_CACHE_KEY = 'kb_providers_cache';
-const PROVIDERS_CACHE_TTL = 3600000;
-
-function loadProviderCache() {
-  try {
-    const raw = localStorage.getItem(PROVIDERS_CACHE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (Date.now() - data.timestamp < PROVIDERS_CACHE_TTL) return data;
-  } catch {}
-  return null;
-}
-
-function saveProviderCache(sources) {
-  try {
-    localStorage.setItem(PROVIDERS_CACHE_KEY, JSON.stringify({ sources, timestamp: Date.now() }));
-  } catch {}
-}
-
 function renderProviderOptions(select, sources) {
   while (select.children.length > 1) select.removeChild(select.lastChild);
   for (const s of sources) {
     const opt = document.createElement('md-select-option');
     opt.setAttribute('value', s);
-    opt.innerHTML = `<div slot="headline">${s}</div>`;
+    opt.innerHTML = `<div slot="headline">${escapeHtml(s)}</div>`;
     select.appendChild(opt);
   }
 }
@@ -320,27 +274,24 @@ async function populateProviders() {
 
   const saved = await cfgGet('kb_provider', 'auto') || 'auto';
 
-  const cached = loadProviderCache();
-  if (cached) {
-    renderProviderOptions(select, cached.sources);
-    select.value = saved;
-  }
-
   if (!select._listenerAttached) {
-    select.addEventListener('change', () => cfgSet('kb_provider', select.value));
+    select.addEventListener('click', (e) => e.stopPropagation());
+    select.addEventListener('change', (e) => { e.stopPropagation(); cfgSet('kb_provider', select.value); });
     select._listenerAttached = true;
   }
 
   try {
-    const res = await fetch('https://yuribin.netlify.app/key/catalog');
+    const res = await fetch(API_URLS.KEY_CATALOG);
     if (res.ok) {
       const data = await res.json();
       const sources = [...new Set((data.entries || []).map(e => e.source))].sort();
-      saveProviderCache(sources);
+      const currentValue = select.value;
       renderProviderOptions(select, sources);
-      select.value = localStorage.getItem('kb_provider_selected') || saved;
+      select.value = currentValue;
     }
-  } catch {}
+  } catch (e) {
+    console.warn('Provider fetch failed:', e);
+  }
 }
 
 function wireCustomKeybox() {
@@ -349,60 +300,101 @@ function wireCustomKeybox() {
   btn.addEventListener('click', openCustomKeyboxDialog);
 }
 
+function wireKeyboxInstallButton() {
+  const btn = document.getElementById('kb-install-btn');
+  const card = document.querySelector('.keybox-install-card');
+  const spinner = card?.querySelector('.kic-spinner');
+  if (!btn) return;
+
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (btn.disabled) return;
+
+    btn.disabled = true;
+    spinner?.classList.remove('hidden');
+
+    try {
+      if (devMode) {
+        await runDevAction('keybox.sh', btn, spinner);
+      } else {
+        await runSimpleAction('keybox.sh', btn, spinner);
+      }
+    } catch (_e) {
+      console.warn('Install error:', _e);
+    } finally {
+      btn.disabled = false;
+      spinner?.classList.add('hidden');
+    }
+  });
+}
+
 async function openCustomKeyboxDialog() {
-  const { getTranslation } = await import('./i18n.js');
   const t = (key, fallback) => getTranslation(key) || fallback;
 
   const dialog = document.createElement('md-dialog');
-  let selectedFile = null;
 
   dialog.innerHTML = `
-    <div slot="headline">${t('custom_kb_title', 'Custom Keybox')}</div>
-    <div slot="content">
-      <div class="custom-kb-section">
-        <md-icon>upload_file</md-icon>
-        <p style="margin:8px 0 4px;font-size:0.875rem">${t('custom_kb_file', 'From File')}</p>
-        <p style="margin:0 0 12px;font-size:0.75rem;color:var(--md-sys-color-on-surface-variant)">
-          Select a keybox XML file from your device
-        </p>
-        <md-filled-tonal-button id="kb-file-btn">${t('custom_kb_browse', 'Browse Files')}</md-filled-tonal-button>
-        <span id="kb-file-name" style="margin-left:8px;font-size:0.75rem;color:var(--md-sys-color-on-surface-variant)">
-          ${t('custom_kb_no_file', 'No file selected')}
-        </span>
-        <input type="file" accept=".xml,.xml.bak" id="kb-file-input" style="display:none" />
-      </div>
-      <md-divider style="margin:16px 0"></md-divider>
-      <div class="custom-kb-section">
-        <md-icon>link</md-icon>
-        <p style="margin:8px 0 4px;font-size:0.875rem">${t('custom_kb_url', 'From URL / Path')}</p>
-        <p style="margin:0 0 12px;font-size:0.75rem;color:var(--md-sys-color-on-surface-variant)">
-          Paste a download URL or device path
-        </p>
-        <md-outlined-text-field id="kb-url-input" style="width:100%" placeholder="https://example.com/keybox.xml or /sdcard/keybox.xml"></md-outlined-text-field>
-      </div>
+    <div slot="headline" style="padding:20px 24px 4px">${t('custom_kb_title', 'Custom Keybox')}</div>
+    <div slot="content" style="padding:4px 24px">
+      <md-filled-card style="padding:12px;border-radius:14px;width:100%;box-sizing:border-box;--md-filled-card-container-color:var(--md-sys-color-surface-container-highest)">
+        <div class="custom-kb-section">
+          <div class="li-icon"><md-icon>upload_file</md-icon></div>
+          <p style="margin:6px 0 2px;font-size:0.8125rem">${t('custom_kb_file', 'Import File')}</p>
+          <p style="margin:0 0 8px;font-size:0.6875rem;color:var(--md-sys-color-on-surface-variant)">
+            Select a keybox XML file from your device
+          </p>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <md-assist-chip id="kb-file-chip" label="${t('custom_kb_no_file', 'No file selected')}" style="height:36px;font-size:0.75rem"></md-assist-chip>
+            <input type="file" accept=".xml,.xml.bak" id="kb-hidden-file" style="display:none">
+            <md-filled-tonal-button id="kb-file-btn" style="height:36px;font-size:0.75rem">${t('custom_kb_browse', 'Browse Files')}</md-filled-tonal-button>
+          </div>
+        </div>
+      </md-filled-card>
+
+      <md-filled-card style="padding:12px;border-radius:14px;width:100%;box-sizing:border-box;margin-top:8px;--md-filled-card-container-color:var(--md-sys-color-surface-container-highest)">
+        <div class="custom-kb-section">
+          <div class="li-icon"><md-icon>link</md-icon></div>
+          <p style="margin:6px 0 2px;font-size:0.8125rem">${t('custom_kb_url', 'URL or Path')}</p>
+          <p style="margin:0 0 8px;font-size:0.6875rem;color:var(--md-sys-color-on-surface-variant)">
+            Paste a download URL or enter a device path
+          </p>
+          <md-outlined-text-field id="kb-url-input" style="width:100%;--md-outlined-text-field-container-shape:14px;--md-sys-shape-corner-extra-small:14px;border-radius:14px;height:44px" placeholder="https://example.com/keybox.xml or /sdcard/keybox.xml">
+            <md-icon-button slot="trailing-icon" id="kb-paste-btn">
+              <md-icon>content_paste</md-icon>
+            </md-icon-button>
+          </md-outlined-text-field>
+        </div>
+      </md-filled-card>
     </div>
-    <div slot="actions">
-      <md-text-button id="kb-clear">${t('custom_kb_clear', 'Clear')}</md-text-button>
-      <md-text-button id="kb-cancel">${t('dialog_close', 'Close')}</md-text-button>
+    <div slot="actions" style="padding:4px 24px 20px">
+      <md-text-button id="kb-clear"><md-icon slot="icon">delete</md-icon> ${t('custom_kb_clear', 'Clear')}</md-text-button>
+      <div class="spacer"></div>
       <md-filled-tonal-button id="kb-apply">${t('custom_kb_apply', 'Apply')}</md-filled-tonal-button>
     </div>
   `;
 
   document.body.appendChild(dialog);
 
-  const fileInput = dialog.querySelector('#kb-file-input');
   const fileBtn = dialog.querySelector('#kb-file-btn');
-  const fileName = dialog.querySelector('#kb-file-name');
   const urlInput = dialog.querySelector('#kb-url-input');
+  const pasteBtn = dialog.querySelector('#kb-paste-btn');
   const clearBtn = dialog.querySelector('#kb-clear');
-  const cancelBtn = dialog.querySelector('#kb-cancel');
   const applyBtn = dialog.querySelector('#kb-apply');
 
-  fileBtn.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files && fileInput.files[0]) {
-      selectedFile = fileInput.files[0];
-      fileName.textContent = selectedFile.name;
+  fileBtn.addEventListener('click', () => {
+    openFileBrowser((filePath) => {
+      urlInput.value = filePath;
+      const chip = dialog.querySelector('#kb-file-chip');
+      if (chip) chip.label = filePath.split('/').pop();
+    });
+  });
+
+  pasteBtn.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) urlInput.value = text;
+    } catch (e) {
+      console.warn('Clipboard read failed:', e);
     }
   });
 
@@ -413,39 +405,119 @@ async function openCustomKeyboxDialog() {
     dialog.close();
   });
 
-  cancelBtn.addEventListener('click', () => dialog.close());
-
   applyBtn.addEventListener('click', async () => {
-    const { exec } = await import('./bridge.js');
+    const { exec, getModuleDir } = await import('./bridge.js');
+    const moddir = getModuleDir();
+    const text = urlInput.value.trim();
 
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const content = e.target.result;
-        const b64 = btoa(content);
-        try {
-          await exec(`echo '${b64}' | base64 -d > /data/local/tmp/custom_keybox.xml 2>/dev/null`);
-          cfgSet('kb_custom_type', 'file');
-          cfgSet('kb_custom_value', '/data/local/tmp/custom_keybox.xml');
-          showToast(t('custom_kb_applied', 'Custom keybox configured'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
-          dialog.close();
-        } catch {
-          showToast('Failed to write custom keybox', { icon: 'error', type: 'error', autoCloseDelay: 3000 });
+    if (!text) {
+      showToast('Enter a URL or device path', { icon: 'error', type: 'error', autoCloseDelay: 2500 });
+      return;
+    }
+
+    // Show detecting toast
+    const detectingToast = showToast(t('custom_kb_detecting', 'Detecting keybox...'), { icon: 'info', type: 'info', autoCloseDelay: 30000 });
+
+    try {
+      let serial = '';
+
+      if (text.startsWith('http://') || text.startsWith('https://')) {
+        // Download to temp, then decode
+        const { stdout } = await exec(
+          `curl -s ${shellEscape(text)} > /data/local/tmp/_kb_check.xml 2>/dev/null && ` +
+          `. ${moddir}/lib/common.sh && decode_keybox_serial /data/local/tmp/_kb_check.xml`
+        );
+        serial = (stdout || '').trim();
+
+        // Read the serial directly after decoding
+        if (!serial) {
+          // Try to decode the downloaded file differently
+          const { stdout: s2 } = await exec(
+            `. ${moddir}/lib/common.sh && _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /data/local/tmp/_kb_check.xml | head -20 | grep -v 'CERTIFICATE' | tr -d '\\n') && [ -n "$_b64" ] && _hex=$(echo "$_b64" | base64 -d 2>/dev/null | od -v -tx1 | awk 'BEGIN{ORS=""} {for(i=2;i<=NF;i++) printf "%s", $i}') && _parse_serial "$_hex" && echo "$_serial"`
+          );
+          serial = (s2 || '').trim();
         }
-      };
-      reader.readAsBinaryString(selectedFile);
-    } else if (urlInput.value.trim()) {
-      const val = urlInput.value.trim();
-      const type = val.startsWith('http://') || val.startsWith('https://') ? 'url' : 'path';
-      cfgSet('kb_custom_type', type);
-      cfgSet('kb_custom_value', val);
-      showToast(t('custom_kb_applied', 'Custom keybox configured'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
-      dialog.close();
-    } else {
-      showToast('Select a file or enter a URL/path', { icon: 'error', type: 'error', autoCloseDelay: 2500 });
+      } else if (text.startsWith('/')) {
+        // Local file — decode directly
+        const { stdout } = await exec(
+          `. ${moddir}/lib/common.sh && decode_keybox_serial ${shellEscape(text)}`
+        );
+        serial = (stdout || '').trim();
+        if (!serial) {
+          const { stdout: s2 } = await exec(
+            `. ${moddir}/lib/common.sh && _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' ${shellEscape(text)} | head -20 | grep -v 'CERTIFICATE' | tr -d '\\n') && [ -n "$_b64" ] && _hex=$(echo "$_b64" | base64 -d 2>/dev/null | od -v -tx1 | awk 'BEGIN{ORS=""} {for(i=2;i<=NF;i++) printf "%s", $i}') && _parse_serial "$_hex" && echo "$_serial"`
+          );
+          serial = (s2 || '').trim();
+        }
+      }
+
+      // Look up serial in catalog
+      let catalogInfo = null;
+      if (serial) {
+        try {
+          const catalogRes = await fetch(`${API_URLS.KEY_CATALOG_LOOKUP}?serial=${serial}`);
+          if (catalogRes.ok) {
+            catalogInfo = await catalogRes.json();
+          }
+        } catch (e) {
+          console.warn('Catalog fetch failed:', e);
+        }
+      }
+
+      // Show detected dialog
+      const detectedDialog = document.createElement('md-dialog');
+      detectedDialog.innerHTML = `
+        <div slot="headline">${t('custom_kb_detected', 'Keybox Detected')}</div>
+        <div slot="content" style="text-align:center;padding:8px 16px">
+          ${catalogInfo ? `
+            <div class="li-icon" style="margin:0 auto 8px"><md-icon>verified_user</md-icon></div>
+            <p style="font-size:0.9375rem;font-weight:500;margin:4px 0">${t('custom_kb_known', 'Known Keybox')}</p>
+            <div style="display:inline-flex;align-items:center;gap:8px;margin:4px 0">
+              <md-chip style="--md-chip-label-text-color:var(--md-sys-color-primary)">${escapeHtml(catalogInfo.source)}</md-chip>
+              <span style="font-size:0.8125rem;color:var(--md-sys-color-on-surface-variant)">${escapeHtml(catalogInfo.version)}</span>
+            </div>
+            <md-chip style="--md-chip-label-text-color:${catalogInfo.revoked ? 'var(--md-sys-color-error)' : 'var(--md-sys-color-tertiary)'}">${catalogInfo.revoked ? t('custom_kb_revoked', 'Revoked') : t('custom_kb_active', 'Active')}</md-chip>
+          ` : `
+            <div class="li-icon" style="margin:0 auto 8px;background:var(--md-sys-color-surface-container-high)"><md-icon style="color:var(--md-sys-color-on-surface)">lock</md-icon></div>
+            <p style="font-size:0.9375rem;font-weight:500;margin:4px 0">${t('custom_kb_private', 'Private Keybox')}</p>
+            <p style="font-size:0.75rem;color:var(--md-sys-color-on-surface-variant);margin:4px 0">${t('custom_kb_private_desc', 'This keybox is not in the catalog')}</p>
+          `}
+        </div>
+        <div slot="actions">
+          <md-text-button id="kb-detect-cancel">${t('dialog_close', 'Cancel')}</md-text-button>
+          <div class="spacer"></div>
+          <md-filled-tonal-button id="kb-detect-apply">${t('custom_kb_apply_confirm', 'Apply')}</md-filled-tonal-button>
+        </div>
+      `;
+      document.body.appendChild(detectedDialog);
+
+      detectedDialog.querySelector('#kb-detect-cancel').addEventListener('click', () => detectedDialog.close());
+      detectedDialog.querySelector('#kb-detect-apply').addEventListener('click', () => {
+        if (text.startsWith('http://') || text.startsWith('https://')) {
+          cfgSet('kb_custom_type', 'url');
+        } else {
+          cfgSet('kb_custom_type', 'path');
+        }
+        cfgSet('kb_custom_value', text);
+        showToast(t('custom_kb_applied', 'Custom keybox configured'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
+        detectedDialog.close();
+        dialog.close();
+      });
+      detectedDialog.addEventListener('close', () => document.body.removeChild(detectedDialog));
+      closeToast(detectingToast);
+      detectedDialog.show();
+
+    } catch (e) {
+      console.warn('Keybox detection failed:', e);
+      closeToast(detectingToast);
+      showToast('Failed to detect keybox', { icon: 'error', type: 'error', autoCloseDelay: 3000 });
     }
   });
 
-  dialog.addEventListener('close', () => document.body.removeChild(dialog));
+  dialog.addEventListener('close', () => {
+    document.body.removeChild(dialog);
+  });
   dialog.show();
 }
+
+

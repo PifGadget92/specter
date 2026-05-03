@@ -1,15 +1,12 @@
 #!/system/bin/sh
-# Strip webroot/common/<script> to reach module root (3 levels)
-MODDIR="${0%/*}"
-MODDIR="${MODDIR%/*}"
-MODDIR="${MODDIR%/*}"
-. "$MODDIR/lib/common.sh"
+. /data/adb/modules/Specter/lib/common.sh 2>/dev/null
+MODULE_ROOT=$(resolve_module_root)
 
-INFO_PATH="$MODDIR/webroot/json/info.json"
+INFO_PATH="$MODULE_ROOT/webroot/json/info.json"
 
 _android_ver=$(_escape_json "$(getprop ro.build.version.release)")
 _kernel_ver=$(_escape_json "$(uname -r)")
-_version=$(_escape_json "$(grep '^version=' "$MODDIR/module.prop" | cut -d'=' -f2)")
+_version=$(_escape_json "$(grep '^version=' "$MODULE_ROOT/module.prop" | cut -d'=' -f2)")
 
 # Root Implementation
 # Strategy: kernel-level root providers first, then userspace

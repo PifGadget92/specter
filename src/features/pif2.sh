@@ -13,7 +13,7 @@ while IFS= read -r prop; do
     log "PIF2" "Warning: Failed to delete prop $prop"
   fi
 done <<EOF
-$(getprop | grep -E "pihook|pixelprops" | sed -E "s/^\[(.*)\]:.*/\1/")
+$(getprop | grep -E "pihook|pixelprops" | sed "s/^\[\(.*\)\]:.*/\1/")
 EOF
 
 log "PIF2" "Cleaned $_count props"

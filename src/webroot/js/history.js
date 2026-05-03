@@ -1,12 +1,12 @@
 import { escapeHtml } from './utils.js';
+import { getFriendlyNames } from './state.js';
+import { STORAGE_KEY, MAX_ENTRIES } from './constants.js';
+import { getTranslation } from './i18n.js';
 
-const STORAGE_KEY = 'specter_script_history';
-const MAX_ENTRIES = 240;
-
-export function getHistory() {
+function getHistory() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch { return []; }
+  } catch { return []; } /* JSON.parse fallback */
 }
 
 export function addEntry(scriptName, output) {
@@ -15,11 +15,11 @@ export function addEntry(scriptName, output) {
   const entries = getHistory();
   entries.unshift({ script: scriptName, output, time: new Date().toISOString() });
   if (entries.length > MAX_ENTRIES) entries.length = MAX_ENTRIES;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch (e) { console.warn('Failed to save history:', e); }
 }
 
-export function clearHistory() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { }
+function clearHistory() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { console.warn('Failed to clear history:', e); }
 }
 
 function formatTime(isoString) {
@@ -40,7 +40,7 @@ function formatTime(isoString) {
       return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' at ' + timeStr;
     }
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch {
+  } catch { /* Date parse fallback */
     return isoString;
   }
 }
@@ -51,8 +51,6 @@ function isErrorOutput(output) {
 
 export async function openRecentActivity(devMode = false) {
   const entries = getHistory();
-  const { getTranslation } = await import('./i18n.js');
-
   if (!entries || entries.length === 0) {
     const dialog = document.createElement('md-dialog');
     dialog.innerHTML = `
@@ -78,7 +76,7 @@ export async function openRecentActivity(devMode = false) {
   list.className = 'activity-list';
 
   entries.forEach((entry, index) => {
-    const i18nKey = window.__friendlyNames?.[entry.script];
+    const i18nKey = getFriendlyNames()[entry.script];
     const friendlyName = (i18nKey && getTranslation(i18nKey)) || entry.script;
     const isError = isErrorOutput(entry.output);
     const statusIcon = isError ? 'error' : 'check_circle';

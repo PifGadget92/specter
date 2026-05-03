@@ -25,21 +25,21 @@
       document.documentElement.style.colorScheme = resolved;
     })();
   </script>
-  <script type="module" crossorigin src="./assets/index-cLI4OT1N.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-lhHHWwHU.js">
-  <link rel="modulepreload" crossorigin href="./assets/bridge-BHYUl5TK.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-z8_fUWAi.css">
+  <script type="module" crossorigin src="./assets/index-y67Mp9go.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/utils-rh5jpaLW.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-AIU2D_Nn.css">
 </head>
 <body>
   <div class="app-layout">
 
     <header class="app-top-bar" id="top-bar">
-      <span class="md-typescale-headline-medium app-title" data-i18n="app_title">Specter</span>
-      <div style="flex: 1"></div>
+      <h1 class="md-typescale-headline-medium app-title" data-i18n="app_title">Specter</h1>
+      <div class="spacer"></div>
       <span id="network-chip" class="network-chip">
-        <md-icon>wifi</md-icon>
+        <md-icon aria-hidden="true">wifi</md-icon>
         <span id="network-label">Online</span>
       </span>
+      <span id="network-announce" aria-live="polite" class="sr-only"></span>
     </header>
 
     <main>
@@ -48,8 +48,8 @@
         <section id="home-page">
 
           <md-filled-card id="keybox-card" class="hero-card">
-            <div style="display:flex;align-items:center;gap:16px;padding:16px">
-              <md-icon id="keybox-icon" style="font-size:28px;font-family:'Material Icons'">key</md-icon>
+            <div class="hero-card__body">
+              <md-icon id="keybox-icon" style="font-size:28px;font-family:'Material Icons'" aria-hidden="true">key</md-icon>
               <div style="flex:1;display:flex;flex-direction:column;gap:4px">
                 <p class="md-typescale-title-medium" id="keybox-label" style="margin:0">Keybox Status</p>
                 <div class="keybox-badges">
@@ -57,7 +57,7 @@
                   <span id="keybox-status" class="keybox-chip">—</span>
                 </div>
               </div>
-              <md-icon class="hero-card__action-icon" style="cursor:pointer">history</md-icon>
+              <md-icon class="hero-card__action-icon" aria-label="History">history</md-icon>
             </div>
           </md-filled-card>
 
@@ -69,37 +69,37 @@
           <div class="info-grid">
 
             <md-filled-card class="info-card">
-              <md-icon class="info-card__icon">calendar_today</md-icon>
+              <md-icon class="info-card__icon" aria-hidden="true">calendar_today</md-icon>
               <p class="md-typescale-title-small info-card__label" data-i18n="home_clock_date">Date</p>
               <p class="md-typescale-title-medium info-card__value" id="clock-date">—</p>
             </md-filled-card>
 
             <md-filled-card class="info-card">
-              <md-icon class="info-card__icon">schedule</md-icon>
+              <md-icon class="info-card__icon" aria-hidden="true">schedule</md-icon>
               <p class="md-typescale-title-small info-card__label" data-i18n="home_clock_time">Time</p>
               <p class="md-typescale-title-medium info-card__value" id="clock-time">—</p>
             </md-filled-card>
 
             <md-filled-card id="version-info-card" class="info-card">
-              <md-icon class="info-card__icon">info</md-icon>
+              <md-icon class="info-card__icon" aria-hidden="true">info</md-icon>
               <p class="md-typescale-title-small info-card__label" data-i18n="home_version">Module Version</p>
               <p class="md-typescale-title-medium info-card__value" id="version-info-value">—</p>
             </md-filled-card>
 
             <md-filled-card class="info-card">
-              <md-icon class="info-card__icon">android</md-icon>
+              <md-icon class="info-card__icon" aria-hidden="true">android</md-icon>
               <p class="md-typescale-title-small info-card__label" data-i18n="home_android">Android</p>
               <p class="md-typescale-title-medium info-card__value" id="android-value">—</p>
             </md-filled-card>
 
             <md-filled-card class="info-card">
-              <md-icon class="info-card__icon">memory</md-icon>
+              <md-icon class="info-card__icon" aria-hidden="true">memory</md-icon>
               <p class="md-typescale-title-small info-card__label" data-i18n="home_kernel">Kernel</p>
               <p class="md-typescale-title-medium info-card__value" id="kernel-value">—</p>
             </md-filled-card>
 
             <md-filled-card class="info-card">
-              <md-icon class="info-card__icon">vpn_key</md-icon>
+              <md-icon class="info-card__icon" aria-hidden="true">vpn_key</md-icon>
               <p class="md-typescale-title-small info-card__label" data-i18n="home_root">Root</p>
               <p class="md-typescale-title-medium info-card__value" id="root-value">—</p>
             </md-filled-card>
@@ -110,31 +110,32 @@
 
         <section id="actions-page" hidden>
 
-          <div class="list-title" data-i18n="menu_keybox">Keybox</div>
-          <div class="list-container">
-            <div class="list-item" data-script="keybox.sh" style="flex-wrap:wrap">
-              <div style="display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px 4px;box-sizing:border-box">
-                <md-icon>key</md-icon>
-                <div class="list-item-content">
-                  <div class="toggle-text" data-i18n="menu_import_keybox">Install Keybox</div>
-                  <span class="supporting-text" data-i18n="menu_import_keybox_desc">Downloads and installs remote keybox to Tricky Store</span>
-                </div>
-                <div class="spacer"></div>
-                <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
-                <md-ripple></md-ripple>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;width:100%;padding:0 16px 8px 66px;box-sizing:border-box">
-                <md-outlined-select id="kb-provider" style="width:160px">
-                  <md-select-option value="auto" selected><div slot="headline">Auto</div></md-select-option>
-                </md-outlined-select>
-                <span class="supporting-text" style="font-size:0.72rem">Provider</span>
+          <h2 class="list-title" data-i18n="menu_keybox">Keybox</h2>
+          <md-filled-card class="keybox-install-card">
+            <div class="kic-header">
+              <div class="kic-icon-container"><md-icon aria-hidden="true">key</md-icon></div>
+              <div class="kic-header-text">
+                <div class="kic-title" data-i18n="menu_import_keybox">Install Keybox</div>
+                <div class="kic-subtitle" data-i18n="menu_import_keybox_desc">Downloads and installs remote keybox to Tricky Store</div>
               </div>
             </div>
-          </div>
 
-          <div class="list-container" style="margin-top:-8px">
+            <div class="kic-provider-row">
+              <md-outlined-select id="kb-provider" class="kic-provider-select">
+                <md-select-option value="auto" selected><div slot="headline">Auto</div></md-select-option>
+              </md-outlined-select>
+            </div>
+
+            <md-filled-button class="kic-install-btn" id="kb-install-btn">
+              <md-icon slot="icon" aria-hidden="true">download</md-icon>
+              <span data-i18n="install_now">Install now</span>
+            </md-filled-button>
+            <md-circular-progress indeterminate class="kic-spinner hidden" style="margin:8px auto"></md-circular-progress>
+          </md-filled-card>
+
+          <div class="list-container list-container--compact">
             <div class="list-item" id="custom-keybox-btn" style="cursor:pointer">
-              <md-icon>settings</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">settings</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="menu_custom_keybox">Set Custom Keybox</div>
                 <span class="supporting-text" data-i18n="menu_custom_keybox_desc">Use your own keybox file, URL, or device path</span>
@@ -144,10 +145,10 @@
             </div>
           </div>
 
-          <div class="list-title" data-i18n="menu_google_services">Google Services</div>
+          <h2 class="list-title" data-i18n="menu_google_services">Google Services</h2>
           <div class="list-container">
             <div class="list-item" data-script="gms.sh">
-              <md-icon>block</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">block</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="menu_force_clear">Force Stop & Clear Play Store</div>
                 <span class="supporting-text" data-i18n="menu_force_clear_desc">Force-stops Play Store and wipes its data cache</span>
@@ -158,10 +159,10 @@
             </div>
           </div>
 
-          <div class="list-title" data-i18n="menu_tricky_store">Tricky Store</div>
+          <h2 class="list-title" data-i18n="menu_tricky_store">Tricky Store</h2>
           <div class="list-container">
             <div class="list-item" data-script="target.sh">
-              <md-icon>list_alt</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">list_alt</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="menu_target">Set target.txt</div>
                 <span class="supporting-text" data-i18n="menu_target_desc">Generates Tricky Store target.txt with all installed apps</span>
@@ -172,7 +173,7 @@
             </div>
 
             <div class="list-item" data-script="security_patch.sh">
-              <md-icon>security_update_good</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">security_update_good</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="menu_patch">Set Security Patch</div>
                 <span class="supporting-text" data-i18n="menu_patch_desc">Writes spoofed security patch date to Tricky Store</span>
@@ -183,7 +184,7 @@
             </div>
 
             <div class="list-item" data-script="boot_hash.sh">
-              <md-icon>verified</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">verified</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_set_verified_boot">Set Verified Boot Hash</div>
                 <span class="supporting-text" data-i18n="advance_set_verified_boot_desc">Reads and writes verified boot hash for attestation</span>
@@ -198,10 +199,10 @@
 
         <section id="advanced-page" hidden>
 
-          <div class="list-title" data-i18n="advance_menu_title_extended">Detection Fixes</div>
+          <h2 class="list-title" data-i18n="advance_menu_title_extended">Detection Fixes</h2>
           <div class="list-container">
             <div class="list-item" data-script="cleanup.sh" data-destructive>
-              <md-icon>delete_sweep</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">delete_sweep</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_clear_all_detection_traces">Clear All Detection Traces</div>
                 <span class="supporting-text" data-i18n="advance_clear_all_detection_traces_desc">Deletes detector app data, temp files, resets props, removes ODEX</span>
@@ -212,7 +213,7 @@
             </div>
 
             <div class="list-item" data-script="lsposed.sh" data-destructive>
-              <md-icon>code_off</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">code_off</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_fix_detect_lsposed">Fix LSPosed Detection</div>
                 <span class="supporting-text" data-i18n="advance_fix_lsposed_desc">Deletes all base.odex files from /data/app</span>
@@ -223,7 +224,7 @@
             </div>
 
             <div class="list-item" data-script="pif2.sh">
-              <md-icon>bug_report</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">bug_report</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_fix_detect_pif">Fix PIF Detection</div>
                 <span class="supporting-text" data-i18n="advance_fix_pif_desc">Removes PIF-related properties via resetprop</span>
@@ -234,7 +235,7 @@
             </div>
 
             <div class="list-item" data-script="twrp.sh" data-destructive>
-              <md-icon>folder_delete</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">folder_delete</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_fix_detect_recovery_file">Fix Recovery File Detection</div>
                 <span class="supporting-text" data-i18n="advance_fix_recovery_desc">Deletes /sdcard/TWRP directory</span>
@@ -245,7 +246,7 @@
             </div>
 
             <div class="list-item" data-script="kill_all.sh" data-destructive>
-              <md-icon>cancel</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">cancel</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_kill_all">Kill All Processes</div>
                 <span class="supporting-text" data-i18n="advance_kill_all_desc">Force-stops and clears data for all known detector apps</span>
@@ -256,10 +257,10 @@
             </div>
           </div>
 
-          <div class="list-title" data-i18n="advance_menu_title_config">Module Configs</div>
+          <h2 class="list-title" data-i18n="advance_menu_title_config">Module Configs</h2>
           <div class="list-container">
             <div class="list-item" data-script="hma.sh">
-              <md-icon>cloud_download</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">cloud_download</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_set_hma-oss_configs">Set HMA-OSS Configs</div>
                 <span class="supporting-text" data-i18n="advance_set_hma_desc">Downloads HMA-OSS config from GitHub with proper permissions</span>
@@ -270,7 +271,7 @@
             </div>
 
             <div class="list-item" data-script="znctl.sh">
-              <md-icon>tune</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">tune</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_set_zygisk_next_configs">Set Zygisk Next Configs</div>
                 <span class="supporting-text" data-i18n="advance_set_zygisk_desc">Configures enforce-denylist, memory-type, linker settings</span>
@@ -281,7 +282,7 @@
             </div>
 
             <div class="list-item" data-script="pif.sh">
-              <md-icon>fingerprint</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">fingerprint</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_set_pif">Set Fingerprint (PIF)</div>
                 <span class="supporting-text" data-i18n="advance_set_pif_desc">Runs Play Integrity Fix auto-update scripts</span>
@@ -292,7 +293,7 @@
             </div>
 
             <div class="list-item" data-script="rka.sh">
-              <md-icon>cloud_sync</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">cloud_sync</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_upd_yurirka">Update RKA Config</div>
                 <span class="supporting-text" data-i18n="advance_upd_rka_desc">Provisions Remote Key Attestation config for PassIt</span>
@@ -303,10 +304,10 @@
             </div>
           </div>
 
-          <div class="list-title" data-i18n="advance_tee_section">Fix TEE: OnePlus, RedMagic, Realme, Oppo…</div>
+          <h2 class="list-title" data-i18n="advance_tee_section">Fix TEE: OnePlus, RedMagic, Realme, Oppo…</h2>
           <div class="list-container">
             <div class="list-item" data-script="widevine.sh">
-              <md-icon>layers</md-icon>
+              <div class="li-icon"><md-icon aria-hidden="true">layers</md-icon></div>
               <div class="list-item-content">
                 <div class="toggle-text" data-i18n="advance_wdevinel1">Fix Widevine L1</div>
                 <span class="supporting-text" data-i18n="advance_wdevinel1_desc">Copies FixWidevineL1 files and runs KmInstallKeybox vendor binary</span>
@@ -321,28 +322,28 @@
 
         <section id="settings-page" hidden>
 
-          <p class="section-pill" data-i18n="settings_language">Language</p>
+          <h2 class="section-pill" data-i18n="settings_language">Language</h2>
           <md-outlined-card class="settings-card">
             <md-outlined-select id="language-select">
-              <md-icon slot="leading-icon">language</md-icon>
+              <md-icon slot="leading-icon" aria-hidden="true">language</md-icon>
             </md-outlined-select>
           </md-outlined-card>
 
-          <p class="section-pill" data-i18n="settings_appearance">Appearance</p>
+          <h2 class="section-pill" data-i18n="settings_appearance">Appearance</h2>
           <md-outlined-card class="settings-card">
 
             <p class="md-typescale-label-large settings-sublabel" data-i18n="settings_theme_mode">Mode</p>
             <md-outlined-segmented-button-set id="theme-mode-group">
               <md-outlined-segmented-button value="dark">
-                <md-icon slot="icon">dark_mode</md-icon>
+                <md-icon slot="icon" aria-hidden="true">dark_mode</md-icon>
                 <span data-i18n="theme_mode_dark">Dark</span>
               </md-outlined-segmented-button>
               <md-outlined-segmented-button value="light">
-                <md-icon slot="icon">light_mode</md-icon>
+                <md-icon slot="icon" aria-hidden="true">light_mode</md-icon>
                 <span data-i18n="theme_mode_light">Light</span>
               </md-outlined-segmented-button>
               <md-outlined-segmented-button value="auto">
-                <md-icon slot="icon">brightness_auto</md-icon>
+                <md-icon slot="icon" aria-hidden="true">brightness_auto</md-icon>
                 <span data-i18n="theme_mode_auto">Auto</span>
               </md-outlined-segmented-button>
             </md-outlined-segmented-button-set>
@@ -373,10 +374,10 @@
 
           </md-outlined-card>
 
-          <p class="section-pill" data-i18n="settings_clock_format">Clock Format</p>
+          <h2 class="section-pill" data-i18n="settings_clock_format">Clock Format</h2>
           <md-outlined-card class="settings-card">
             <md-outlined-select id="clock-format-select">
-              <md-icon slot="leading-icon">schedule</md-icon>
+              <md-icon slot="leading-icon" aria-hidden="true">schedule</md-icon>
               <md-select-option value="auto">
                 <div slot="headline" data-i18n="clock_format_auto">Auto (Device)</div>
               </md-select-option>
@@ -389,10 +390,10 @@
             </md-outlined-select>
           </md-outlined-card>
 
-          <p class="section-pill" data-i18n="settings_advanced">Advanced</p>
+          <h2 class="section-pill" data-i18n="settings_advanced">Advanced</h2>
           <md-outlined-card class="settings-card">
             <div class="settings-toggle-item">
-              <md-icon>developer_mode</md-icon>
+              <md-icon aria-hidden="true">developer_mode</md-icon>
               <div class="settings-toggle-content">
                 <div data-i18n="settings_dev_mode">Developer Mode</div>
                 <span class="supporting-text" data-i18n="settings_dev_mode_desc">Show raw script names and terminal output</span>
@@ -403,14 +404,14 @@
             <md-divider class="settings-divider"></md-divider>
             <div class="output-terminal">
               <div class="output-terminal-header">
-                <md-icon>terminal</md-icon>
+                <md-icon aria-hidden="true">terminal</md-icon>
                 <md-text-button id="clear-terminal" data-i18n="terminal_clear">Clear</md-text-button>
               </div>
               <div class="output-terminal-content"></div>
             </div>
           </md-outlined-card>
 
-          <p class="section-pill" data-i18n="update_title">Update & Support</p>
+          <h2 class="section-pill" data-i18n="update_title">Update & Support</h2>
           <md-outlined-card class="settings-card">
             <p class="md-typescale-body-medium" data-i18n="update_desc">
               Stay up to date with the latest Specter releases and bug fixes.
@@ -434,7 +435,7 @@
             </p>
           </md-outlined-card>
 
-          <p class="section-pill" data-i18n="settings_contributors">Project Contributors</p>
+          <h2 class="section-pill" data-i18n="settings_contributors">Project Contributors</h2>
           <div id="contributors-grid" class="contributors-grid"></div>
 
         </section>
@@ -443,26 +444,26 @@
     </main>
 
     <nav id="nav-bar" class="nav-bar" role="navigation" aria-label="Main navigation">
-      <div id="nav-indicator" class="nav-indicator"></div>
+      <div id="nav-indicator" class="nav-indicator" aria-hidden="true"></div>
 
       <button class="nav-tab nav-tab--active" data-page="home-page"
-              data-i18n-label="nav_home" aria-current="page">
-        <md-icon class="nav-icon nav-icon--filled">home</md-icon>
+              aria-current="page">
+        <md-icon class="nav-icon nav-icon--filled" aria-hidden="true">home</md-icon>
         <span class="nav-label" data-i18n="nav_home">Home</span>
       </button>
 
-      <button class="nav-tab" data-page="actions-page" data-i18n-label="nav_menu">
-        <md-icon class="nav-icon">tune</md-icon>
+      <button class="nav-tab" data-page="actions-page" >
+        <md-icon class="nav-icon" aria-hidden="true">tune</md-icon>
         <span class="nav-label" data-i18n="nav_menu">Actions</span>
       </button>
 
-      <button class="nav-tab" data-page="advanced-page" data-i18n-label="nav_advancemenu">
-        <md-icon class="nav-icon">shield</md-icon>
+      <button class="nav-tab" data-page="advanced-page" >
+        <md-icon class="nav-icon" aria-hidden="true">shield</md-icon>
         <span class="nav-label" data-i18n="nav_advancemenu">Advanced</span>
       </button>
 
-      <button class="nav-tab" data-page="settings-page" data-i18n-label="nav_settings">
-        <md-icon class="nav-icon">settings</md-icon>
+      <button class="nav-tab" data-page="settings-page" >
+        <md-icon class="nav-icon" aria-hidden="true">settings</md-icon>
         <span class="nav-label" data-i18n="nav_settings">Settings</span>
       </button>
     </nav>

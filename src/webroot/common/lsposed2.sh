@@ -1,6 +1,4 @@
 #!/system/bin/sh
-MODDIR="${0%/*}"
-MODDIR="${MODDIR%/*}"
-MODDIR="${MODDIR%/*}"
-. "$MODDIR/lib/common.sh"
-sh "$MODDIR/features/lsposed.sh"
+. /data/adb/modules/Specter/lib/common.sh 2>/dev/null
+MODULE_ROOT=$(resolve_module_root)
+sh "$MODULE_ROOT/features/lsposed.sh"

@@ -22,8 +22,8 @@ DECODE_FILE="$TRICKY_DIR/keybox_decode"
 TEMP_FILE="$TRICKY_DIR/keybox.tmp"
 
 # Check for custom keybox config (set via WebUI "Set Custom Keybox")
-_custom_type=$(cat "$MODDIR/config/kb_custom_type.val" 2>/dev/null || echo "")
-_custom_value=$(cat "$MODDIR/config/kb_custom_value.val" 2>/dev/null || echo "")
+_custom_type=$(cat "$YURIKEY_CONFIG_DIR/kb_custom_type.val" 2>/dev/null || echo "")
+_custom_value=$(cat "$YURIKEY_CONFIG_DIR/kb_custom_value.val" 2>/dev/null || echo "")
 
 if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
   log "KEYBOX" "Using custom keybox: $_custom_type ($_custom_value)"
@@ -62,7 +62,7 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
 fi
 
 # Read the selected provider
-_provider=$(cat "$MODDIR/config/kb_provider.val" 2>/dev/null || echo "auto")
+_provider=$(cat "$YURIKEY_CONFIG_DIR/kb_provider.val" 2>/dev/null || echo "auto")
 
 log "KEYBOX" "Fetching available keyboxes..."
 _history=$(download "$CATALOG_URL" 2>/dev/null)
@@ -83,20 +83,20 @@ if [ "$_provider" = "auto" ]; then
 
   _DL_SOURCE="$_working_source"
   _DL_VER="$_working_version"
-  log "KEYBOX" "Auto-selected: $_working_source v$_working_version"
+  log "KEYBOX" "Auto-selected: $_working_source $_working_version"
 else
   # Specific provider — find its latest non-revoked version
   _DL_SOURCE="$_provider"
-  _DL_VER=$(echo "$_history" | grep -o '"source":"'"$_provider"'"[^}]*"version":"[0-9]*"' | sed 's/.*"version":"\([0-9]*\)".*/\1/' | sort -rn | head -1)
+   _DL_VER=$(echo "$_history" | grep -o '"source":"'"$_provider"'"[^}]*"version":"[^"]*"' | sed 's/.*"version":"\([^"]*\)".*/\1/' | sort -rn | head -1)
 
   if [ -z "$_DL_VER" ]; then
     log "KEYBOX" "Error: No versions found for provider '$_provider'"
     exit 1
   fi
-  log "KEYBOX" "Selected provider: $_provider v$_DL_VER"
+  log "KEYBOX" "Selected provider: $_provider $_DL_VER"
 fi
 
-log "KEYBOX" "Downloading keybox $_DL_SOURCE v$_DL_VER..."
+log "KEYBOX" "Downloading keybox $_DL_SOURCE $_DL_VER..."
 _DL_URL="$KEYBOX_URL/$_DL_SOURCE/$_DL_VER"
 download "$_DL_URL" > "$TEMP_FILE" || {
   log "KEYBOX" "Error: Download failed"
@@ -121,6 +121,6 @@ fi
 
 mv "$DECODE_FILE" "$TARGET_FILE" || die "Failed to move decoded keybox to $TARGET_FILE"
 rm -f "$TEMP_FILE"
-log "KEYBOX" "Keybox $_DL_SOURCE v$_DL_VER installed successfully"
+log "KEYBOX" "Keybox $_DL_SOURCE $_DL_VER installed successfully"
 log "KEYBOX" "Finish"
 exit 0

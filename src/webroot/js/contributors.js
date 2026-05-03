@@ -1,4 +1,5 @@
 import { escapeHtml } from './utils.js';
+import { getTranslation } from './i18n.js';
 
 export async function loadContributors() {
   const grid = document.getElementById('contributors-grid');
@@ -9,16 +10,15 @@ export async function loadContributors() {
     const res = await fetch(`json/dev.json?ts=${Date.now()}`);
     devs = await res.json();
   } catch {
+    console.warn('Failed to load contributors');
     return;
   }
-
-  const { getTranslation } = await import('./i18n.js');
 
   grid.innerHTML = devs.map(dev => `
     <md-outlined-card class="contributor-card"
                data-url="${encodeURI(dev.github || '')}">
       <img class="contributor-avatar"
-           src="${dev.avatar || ''}"
+           src="${escapeHtml(dev.avatar || '')}"
            alt="${escapeHtml(dev.name)}"
            loading="lazy"
            onerror="this.src='assets/icon.png'" />

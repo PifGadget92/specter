@@ -63,7 +63,9 @@ async function extractMonetColor() {
         if (seed !== '#000000') return seed;
       }
     }
-  } catch {}
+  } catch (e) {
+    console.warn('Failed to extract monet color:', e);
+  }
   return null;
 }
 
@@ -85,14 +87,6 @@ async function applyMonetPreset(mode) {
   document.documentElement.setAttribute('data-theme-preset', 'monet');
   cfgSet('theme_preset', 'monet');
   generateScheme(seed, resolved === 'dark');
-
-  const fresh = await extractMonetColor();
-  if (fresh && fresh !== currentSeed) {
-    currentSeed = fresh;
-    cfgSet('monet_seed', fresh);
-    const nowResolved = document.documentElement.getAttribute('data-theme-resolved') === 'dark';
-    generateScheme(fresh, nowResolved);
-  }
 }
 
 function applyMode(mode) {

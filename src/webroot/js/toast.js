@@ -1,3 +1,7 @@
+import { escapeHtml } from './utils.js';
+
+import { getTranslation } from './i18n.js';
+
 export function showToast(message, options = {}) {
   const { action, icon, type, autoCloseDelay = 3000, onActionClick, className } = options;
 
@@ -5,10 +9,10 @@ export function showToast(message, options = {}) {
   toast.className = 'md-toast' + (className ? ' ' + className : '') + (type ? ' md-toast--' + type : '');
   toast.innerHTML = `
     ${icon ? `<md-icon class="md-toast__icon">${icon}</md-icon>` : ''}
-    <span class="md-toast__message">${message}</span>
+    <span class="md-toast__message">${escapeHtml(message)}</span>
     <div class="md-toast__actions">
       ${action ? `<button class="md-toast__action">${action}</button>` : ''}
-      <button class="md-toast__close" aria-label="Close"><md-icon>close</md-icon></button>
+      <button class="md-toast__close" aria-label="${getTranslation('dialog_close') || 'Close'}"><md-icon>close</md-icon></button>
     </div>
   `;
 
@@ -53,17 +57,27 @@ function initSwipe(toast) {
   const onMove = (e) => {
     if (!dragging) return;
     currentX = e.clientX - startX;
-    if (currentX < 0) currentX = 0;
+    const isRtl = document.documentElement.dir === 'rtl';
+    if (isRtl) {
+      if (currentX > 0) currentX = 0;
+    } else {
+      if (currentX < 0) currentX = 0;
+    }
     const maxDrag = window.innerWidth * 0.4;
-    const clamped = Math.min(currentX, maxDrag);
-    toast.style.transform = `translateX(calc(-50% + ${clamped}px)) translateY(0)`;
+    const absX = Math.min(Math.abs(currentX), maxDrag);
+    if (isRtl) {
+      toast.style.transform = `translateX(calc(50% - ${absX}px)) translateY(0)`;
+    } else {
+      toast.style.transform = `translateX(calc(-50% + ${absX}px)) translateY(0)`;
+    }
   };
 
   const onEnd = () => {
     if (!dragging) return;
     dragging = false;
     toast.style.transition = '';
-    if (currentX > 80) {
+    const isRtl = document.documentElement.dir === 'rtl';
+    if ((isRtl && currentX < -80) || (!isRtl && currentX > 80)) {
       dismiss(toast);
     } else {
       toast.style.transform = '';
@@ -86,6 +100,10 @@ function dismiss(toast) {
   setTimeout(() => {
     if (toast.parentNode) toast.parentNode.removeChild(toast);
   }, 300);
+}
+
+export function closeToast(toast) {
+  close(toast);
 }
 
 function close(toast) {

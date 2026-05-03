@@ -1,15 +1,21 @@
 import { showToast } from './toast.js';
+import { ONLINE_ENDPOINTS } from './constants.js';
+import { getTranslation } from './i18n.js';
 
 let lastStatus = null;
+let networkInterval = null;
 
 export function initNetwork() {
   updateNetworkStatus();
-  setInterval(updateNetworkStatus, 3000);
+  networkInterval = setInterval(updateNetworkStatus, 3000);
   window.addEventListener('online', updateNetworkStatus);
   window.addEventListener('offline', updateNetworkStatus);
+  window.addEventListener('beforeunload', () => {
+    if (networkInterval) clearInterval(networkInterval);
+  });
 }
 
-export async function updateNetworkStatus() {
+async function updateNetworkStatus() {
   const online = await checkOnline();
 
   if (online === lastStatus) return;
@@ -17,8 +23,8 @@ export async function updateNetworkStatus() {
   lastStatus = online;
 
   const netChip     = document.getElementById('network-chip');
+  const netAnnounce = document.getElementById('network-announce');
 
-  const { getTranslation } = await import('./i18n.js');
   const onlineText  = getTranslation('home_status_online') || 'Online';
   const offlineText = getTranslation('home_status_offline') || 'Offline';
 
@@ -30,6 +36,7 @@ export async function updateNetworkStatus() {
       const icon = netChip.querySelector('md-icon');
       if (icon) icon.textContent = 'wifi';
     }
+    if (netAnnounce) netAnnounce.textContent = onlineText;
   } else {
     netChip?.classList.add('offline');
     if (netChip) {
@@ -39,16 +46,13 @@ export async function updateNetworkStatus() {
       if (icon) icon.textContent = 'wifi_off';
     }
 
+    if (netAnnounce) netAnnounce.textContent = offlineText;
+
     if (wasOnline === true) {
       showToast(offlineText);
     }
   }
 }
-
-const ONLINE_ENDPOINTS = [
-  'https://clients3.google.com/generate_204',
-  'https://www.gstatic.com/generate_204',
-];
 
 async function checkOnline() {
   if (!navigator.onLine) return false;

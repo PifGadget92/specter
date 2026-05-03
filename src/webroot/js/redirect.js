@@ -1,3 +1,5 @@
+import { shellEscape } from './utils.js';
+
 const ALLOWED_HOSTS = [
   'github.com',
   't.me',
@@ -14,7 +16,7 @@ export function openUrl(rawUrl) {
   let url;
   try {
     url = new URL(rawUrl);
-  } catch {
+  } catch { /* URL parse fallback */
     return;
   }
 
@@ -22,13 +24,11 @@ export function openUrl(rawUrl) {
   if (!ALLOWED_HOSTS.some(h => url.hostname === h || url.hostname.endsWith('.' + h))) return;
 
   if (window.ksu?.exec) {
-    const escaped = url.href.replace(/'/g, "\\'");
-    const cbName = `redirect_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    window[cbName] = () => { delete window[cbName]; };
+    window.__redirect_cb = window.__redirect_cb || function() {};
     window.ksu.exec(
-      `am start -a android.intent.action.VIEW -d '${escaped}'`,
+      `am start -a android.intent.action.VIEW -d ${shellEscape(url.href)}`,
       '{}',
-      cbName
+      '__redirect_cb'
     );
   } else {
     window.open(url.href, '_blank');

@@ -1,4 +1,5 @@
-const EXEC_TIMEOUT_MS = 15000;
+import { shellEscape } from './utils.js';
+import { EXEC_TIMEOUT_MS } from './constants.js';
 
 let MODULE = null;
 
@@ -9,7 +10,7 @@ export async function initBridge() {
     if (MODULE?.MODDIR) {
       MODULE.MODDIR = MODULE.MODDIR.replace('/modules_update/', '/modules/');
     }
-  } catch {
+    } catch { /* JSON/URL parse fallback */
     const src = document.currentScript?.src || '';
     const m = src.match(/^(file:\/\/\/data\/adb\/modules\/[^/]+)/);
     MODULE = m ? { MODDIR: m[1] } : null;
@@ -64,21 +65,21 @@ export function runScript(scriptName, type = 'feature') {
 
     try {
       if (executor === 'mmrl') {
-        window.YuriKeyHost.execScript(`sh '${scriptPath}'`, '{}', cbName);
+        window.YuriKeyHost.execScript(`sh ${shellEscape(scriptPath)}`, '{}', cbName);
       } else if (executor === 'legacy-mmrl') {
         window.execYurikeyScript(scriptPath, cbName);
       } else {
-        window.ksu.exec(`sh '${scriptPath}'`, '{}', cbName);
+        window.ksu.exec(`sh ${shellEscape(scriptPath)}`, '{}', cbName);
       }
     } catch (err) { cleanup(); reject(err); }
   });
 }
 
 export function exec(command) {
-  return runScriptRaw(command);
+  return _runScriptRaw(command);
 }
 
-export function runScriptRaw(command) {
+function _runScriptRaw(command) {
   return new Promise((resolve, reject) => {
     const executor = getExecutor();
     if (!executor) { reject(new Error('no-bridge')); return; }
@@ -96,7 +97,7 @@ export function runScriptRaw(command) {
           stdout: json.result || json.stdout || json.output || '',
           stderr: json.stderr || json.error || '',
         });
-      } catch {
+      } catch { /* JSON.parse fallback */
         resolve({ stdout: code, stderr: '' });
       }
     };
@@ -147,10 +148,10 @@ export function spawnScript(scriptName, type = 'feature') {
       window.ksu.spawn('sh', JSON.stringify([scriptPath]), '{}', cbName);
     } catch (e) { delete window[cbName]; setTimeout(() => child.emit('error', e)); }
   } else {
-    const cmd = `sh '${scriptPath}'`;
+    const cmd = `sh ${shellEscape(scriptPath)}`;
     let timedOut = false;
     const t = setTimeout(() => { timedOut = true; child.emit('error', new Error('timeout')); }, EXEC_TIMEOUT_MS);
-    runScriptRaw(cmd).then(({ code, stdout, stderr }) => {
+    _runScriptRaw(cmd).then(({ code, stdout, stderr }) => {
       if (timedOut) return;
       clearTimeout(t);
       if (stdout) stdout.split('\n').forEach(l => l && child.stdout.emit('data', l));
@@ -170,7 +171,10 @@ function parseScriptOutput(raw) {
       output: json.result || json.stdout || json.output || '',
       rawOutput: raw,
     };
-  } catch {
-    return { success: true, rawOutput: raw };
+  } catch { /* JSON.parse fallback */
+    const lower = raw.toLowerCase();
+    const errorKeywords = ['not found', 'failed', 'error', 'permission denied', 'no such file'];
+    const hasError = errorKeywords.some(kw => lower.includes(kw));
+    return { success: !hasError, rawOutput: raw };
   }
 }

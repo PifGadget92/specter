@@ -1,0 +1,1 @@
+function e(e){return String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`).replace(/'/g,`&#39;`)}function t(e){return`'`+String(e).replace(/'/g,`'"'"'`)+`'`}export{t as n,e as t};

@@ -3,5 +3,10 @@ export function escapeHtml(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function shellEscape(str) {
+  return "'" + String(str).replace(/'/g, `'"'"'`) + "'";
 }

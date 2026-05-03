@@ -3,6 +3,7 @@ MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
 . "$MODDIR/../lib/paths.sh"
 . "$MODDIR/../lib/urls.sh"
+trap 'rm -f /data/local/tmp/attestation /data/local/tmp/attestation.zip 2>/dev/null' EXIT
 
 log "WIDEVINE" "Start"
 
@@ -40,10 +41,7 @@ case "$_abi" in
   *)            _lib="/vendor/lib/hw" ;;
 esac
 
-KM_BIN=""
-[ -f /vendor/bin/KmInstallKeybox ]    && KM_BIN=/vendor/bin/KmInstallKeybox
-[ -f /system/bin/KmInstallKeybox ]    && KM_BIN=/system/bin/KmInstallKeybox
-[ -f /vendor/bin/hw/KmInstallKeybox ] && KM_BIN=/vendor/bin/hw/KmInstallKeybox
+KM_BIN=$(find_kmInstallKeybox)
 
 if [ -n "$KM_BIN" ]; then
   LD_LIBRARY_PATH="$_lib" "$KM_BIN" "$WDIR/attestation" attestation true 2>/dev/null || \
