@@ -2,6 +2,9 @@ name: Build Release Module
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -17,55 +20,51 @@ jobs:
         uses: actions/setup-node@v4
         with: { node-version: 22 }
 
-      - name: Build
-        run: npm ci && npm run build
-
-      - name: Extract version
+      - name: Extract version from changelog
         id: version
         run: |
           VERSION=$(grep -m 1 -oP 'v[0-9]+(\.[0-9]+)+' changelog.md)
           if [ -z "$VERSION" ]; then
-            echo "No version found in changelog"
-            exit 0
+            echo "No version found in changelog.md — add a '## vX.Y.Z' entry"
+            exit 1
           fi
-
-          VERSION_CODE=$(echo $VERSION | sed 's/v//' | sed 's/\.//g')
-          RAW_VERSION=$(echo $VERSION | sed 's/v//')
+          RAW_VERSION=$(echo "$VERSION" | sed 's/v//')
+          VERSION_CODE=$(echo "$RAW_VERSION" | awk -F. '{ printf "%d%02d%02d", $1, $2, $3 }')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "raw_version=$RAW_VERSION" >> $GITHUB_OUTPUT
-          
-      - name: Update module.prop
-        run: |
-          sed -i "s/^version=.*/version=${{ steps.version.outputs.version }}/" Module/module.prop
-          sed -i "s/^versionCode=.*/versionCode=${{ steps.version.outputs.version_code }}/" Module/module.prop
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
 
-      - name: Update update.json
+      - name: Update src/module.prop with release version
         run: |
-          ZIP_URL="https://github.com/khx/specter/releases/download/${{ steps.version.outputs.version }}/Specter-${{ steps.version.outputs.version }}.signed.zip"
-          
+          sed -i "s/^version=.*/version=${{ steps.version.outputs.version }}/" src/module.prop
+          sed -i "s/^versionCode=.*/versionCode=${{ steps.version.outputs.version_code }}/" src/module.prop
+
+      - name: Build
+        run: npm ci && npm run build
+
+      - name: Update update.json with release info
+        run: |
+          ZIP_URL="https://github.com/dpejoh/specter/releases/download/${{ steps.version.outputs.version }}/Specter-${{ steps.version.outputs.version }}.zip"
           jq --arg v "${{ steps.version.outputs.raw_version }}" \
              --argjson vc "${{ steps.version.outputs.version_code }}" \
              --arg url "$ZIP_URL" \
              '.version = $v | .versionCode = $vc | .zipUrl = $url' \
              update.json > update_tmp.json && mv update_tmp.json update.json
- 
-      - name: Zip Module folder (Upload module)
+
+      - name: Package module zip
         run: |
           cd Module
-          zip -r ../Specter-${{ steps.version.outputs.version }}.signed.zip .
+          zip -r "../Specter-${{ steps.version.outputs.version }}.zip" .
 
-      - name: Commit and push if changed
+      - name: Commit version bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add Module/module.prop update.json
-
+          git add src/module.prop update.json
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: sync Specter version ${{ steps.version.outputs.raw_version }}"
+            git commit -m "chore: bump version to ${{ steps.version.outputs.raw_version }}"
             git push
           fi
 
@@ -75,6 +74,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           name: Specter ${{ steps.version.outputs.version }}
           body_path: changelog.md
-          files: Specter-${{ steps.version.outputs.version }}.signed.zip
+          files: Specter-${{ steps.version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ github.token }}
