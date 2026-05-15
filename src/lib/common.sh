@@ -228,11 +228,8 @@ PROPS
 }
 
 disable_dev_options() {
-  cmd settings put global development_settings_enabled 0 2>/dev/null || true
-  settings put global development_settings_enabled 0 2>/dev/null || true
-  resetprop -n persist.sys.developer_options 0 2>/dev/null || true
-  resetprop -n sys.settings_global_development_settings_enabled 0 2>/dev/null || true
-  setprop persist.sys.developer_options 0 2>/dev/null || true
+  settings put global development_settings_enabled 0
+  resetprop -n persist.sys.developer_options 0
 }
 
 apply_boot_hardening() {
