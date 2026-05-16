@@ -22,26 +22,27 @@ export function wireKeyboxCard() {
   });
 }
 
-function renderProviderOptions(select: MdOutlinedSelect, sources: string[]) {
-  while (select.children.length > 1) select.removeChild(select.lastChild!);
+function renderProviderOptions(select: HTMLSelectElement, sources: string[]) {
+  while (select.options.length > 1) select.remove(1);
   for (const s of sources) {
-    const opt = document.createElement('md-select-option');
-    opt.setAttribute('value', s);
-    opt.innerHTML = `<div slot="headline">${escapeHtml(s)}</div>`;
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
     select.appendChild(opt);
   }
 }
 
+const providerSelects = new WeakSet<HTMLSelectElement>();
+
 export async function populateProviders() {
-  const select = document.getElementById('kb-provider') as MdOutlinedSelect | null;
+  const select = document.getElementById('kb-provider') as HTMLSelectElement | null;
   if (!select) return;
 
   const saved = await cfgGet('kb_provider', 'auto') || 'auto';
 
-  if (!select._listenerAttached) {
-    select.addEventListener('click', (e: Event) => e.stopPropagation());
+  if (!providerSelects.has(select)) {
+    providerSelects.add(select);
     select.addEventListener('change', () => { cfgSet('kb_provider', select.value); });
-    select._listenerAttached = true;
   }
 
   try {

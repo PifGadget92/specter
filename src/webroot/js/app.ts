@@ -1,4 +1,3 @@
-import './material.js';
 import { initBridge, getModuleDir, exec } from './bridge.js';
 import { shellEscape } from './utils.js';
 import { setModuleDir, migrateLocalStorage, cfgInit, cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
@@ -20,7 +19,19 @@ import { wireKeyboxCard, wireKeyboxInstallButton, wireCustomKeybox, populateProv
 
 const t = (key: string, fallback: string): string => getTranslation(key) || fallback;
 
+/*
+ * Init phases (in order):
+ *   0 — Critical path (bridge + config), must complete
+ *   0b — Core MWC registration (material-core)
+ *   1 — Render frame (theme, navigation, redirect)
+ *   2 — Wire event handlers (all addEventListener, zero I/O)
+ *   3 — Load text + data (fire-and-forget async)
+ *   4 — Background tasks (fire-and-forget async)
+ *   5 — Lazy per-tab data (fire-and-forget async)
+ */
 document.addEventListener('DOMContentLoaded', async () => {
+  /* Phase 0: Critical path — start MWC load in parallel with bridge/cfg */
+  const coreMWC = import('./material-core.js');
   try {
     await initBridge();
     const modPath = getModuleDir();
@@ -30,26 +41,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {
     console.warn('Bridge init failed, running without module path:', e);
   }
+  await coreMWC;
 
+  /* Phase 1: Render frame */
   wireTopBarScroll();
   const savedTheme = await cfgGet('theme', 'dark') || 'dark';
   initTheme(savedTheme);
   wireNavigation();
+  initRedirect();
+
+  /* Phase 2: Wire event handlers */
   wireActions();
   wireKeyboxCard();
   wireRefreshButton();
   wireCustomKeybox();
   wireKeyboxInstallButton();
-  await initI18n();
-  await Promise.all([initNetwork(), populateProviders(), loadContributors()]).catch(err => console.warn('Init error:', err));
-  await initDevice();
   wireTargetApps();
   wireSecurityPatch();
   wireToggles();
   wireControlToggles();
-  wireConflictToggles();
-  initRedirect();
+  wireDevMode();
   buildFriendlyNames();
+  initTerminal();
+
+  const savedDevMode = await cfgGet('dev_mode', 'false') || 'false';
+  setDevMode(savedDevMode === 'true');
+  const sw = document.getElementById('dev-mode-switch') as MdSwitch | null;
+  if (sw) sw.toggleAttribute('selected', savedDevMode === 'true');
+
   document.addEventListener('languageChanged', () => {
     const active = document.querySelector('.nav-tab--active') as HTMLElement | null;
     const indicator = document.getElementById('nav-indicator') as HTMLElement | null;
@@ -59,12 +78,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  const savedDevMode = await cfgGet('dev_mode', 'false') || 'false';
-  setDevMode(savedDevMode === 'true');
-  const sw = document.getElementById('dev-mode-switch') as MdSwitch | null;
-  if (sw) sw.selected = savedDevMode === 'true';
-  wireDevMode();
-  initTerminal();
+  /* Phase 3: Load text + data */
+  initI18n().catch(() => {});
+  initDevice().catch(() => {});
+
+  /* Phase 4: Preload page MWC + background tasks */
+  import('./material-tools.js').catch(() => {});
+  import('./material-control.js').catch(() => {});
+  import('./material-settings.js').catch(() => {});
+  initNetwork();
+  populateProviders().catch(() => {});
+  loadContributors().catch(() => {});
+
+  /* Phase 5: Lazy per-tab data */
+  wireConflictToggles().catch(() => {});
 });
 
 function wireRefreshButton() {

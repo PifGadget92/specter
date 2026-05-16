@@ -5,11 +5,38 @@ import { API_URLS } from './constants.js';
 import { getTranslation } from './i18n.js';
 import type { InfoJson, KeyboxInfoJson } from './types.js';
 
-export async function initDevice() {
-  await Promise.all([refreshDevice(), refreshKeyboxStatus()]);
+const CACHE_TTL = 30000;
+
+interface DeviceCache {
+  device: InfoJson | null;
+  keybox: KeyboxInfoJson | null;
+  ts: number;
 }
 
-export async function refreshDevice() {
+function restoreCache() {
+  try {
+    const raw = localStorage.getItem('specter_device_cache');
+    if (!raw) return;
+    const cache: DeviceCache = JSON.parse(raw);
+    if (Date.now() - cache.ts > CACHE_TTL) return;
+    if (cache.device) applyAllDeviceInfo(cache.device);
+    if (cache.keybox) applyKeyboxStatus(cache.keybox);
+  } catch (e) {}
+}
+
+function saveCache(device: InfoJson | null, keybox: KeyboxInfoJson | null) {
+  try {
+    localStorage.setItem('specter_device_cache', JSON.stringify({ device, keybox, ts: Date.now() }));
+  } catch (e) {}
+}
+
+export async function initDevice() {
+  restoreCache();
+  const [deviceData, keyboxData] = await Promise.all([refreshDevice(), refreshKeyboxStatus()]);
+  if (deviceData || keyboxData) saveCache(deviceData, keyboxData);
+}
+
+export async function refreshDevice(): Promise<InfoJson | null> {
   try {
     const result = await runScript('device-info.sh', 'common');
     if (result.output) {
@@ -20,9 +47,10 @@ export async function refreshDevice() {
   }
   const data = await fetchJson<InfoJson>(API_URLS.INFO);
   if (data) applyAllDeviceInfo(data);
+  return data;
 }
 
-export async function refreshKeyboxStatus() {
+export async function refreshKeyboxStatus(): Promise<KeyboxInfoJson | null> {
   try {
     const result = await runScript('keybox_info.sh', 'feature');
     if (result.output) {
@@ -33,6 +61,7 @@ export async function refreshKeyboxStatus() {
   }
   const data = await fetchJson<KeyboxInfoJson>(API_URLS.KEYBOX_INFO);
   if (data) applyKeyboxStatus(data);
+  return data;
 }
 
 function applyAllDeviceInfo(data: InfoJson) {

@@ -7,9 +7,14 @@
   <meta name="color-scheme" content="dark light" />
   <title data-i18n="app_title">Specter</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://rawbin.netlify.app" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        media="print" onload="this.media='all';this.onload=null"
         onerror="this.onerror=null;this.href='assets/material-icons.css'" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"
+        media="print" onload="this.media='all';this.onload=null"
         onerror="this.onerror=null;this.href='assets/material-icons-outlined.css'" />
   <link rel="stylesheet" href="css/app.css" />
 
@@ -24,6 +29,84 @@
       document.documentElement.setAttribute('data-theme-preset', preset);
       document.documentElement.setAttribute('data-theme-resolved', resolved);
       document.documentElement.style.colorScheme = resolved;
+
+      var root = document.documentElement.style;
+
+      // Restore cached exact theme vars (only if seed matches current config)
+      var cachedVars = localStorage.getItem('specter_theme_vars');
+      var cachedSeed = localStorage.getItem('specter_theme_seed');
+      var expectedSeed = preset === 'monet'
+        ? localStorage.getItem('monet_seed')
+        : (preset === 'blue' ? '#1157CE' : preset === 'yellow' ? '#8F4E06' : preset === 'red' ? '#B3251E' : preset === 'purple' ? '#7438D2' : preset === 'green' ? '#006C35' : preset === 'orange' ? '#9A4600' : preset === 'pink' ? '#B60D6E' : preset === 'cyan' ? '#00687C' : preset === 'grey' ? '#5E5E5E' : null);
+      if (cachedVars && cachedSeed && cachedSeed === expectedSeed) {
+        try {
+          var vars = JSON.parse(cachedVars);
+          for (var key in vars) {
+            if (vars.hasOwnProperty(key)) root.setProperty(key, vars[key]);
+          }
+          return;
+        } catch (e) {}
+      }
+
+      // First visit — use preset-aware defaults to avoid violet flash
+      var C = { dark: {}, light: {} };
+
+      // Common defaults shared by both modes
+      C.light['--md-sys-color-surface'] = '#fffbff';
+      C.light['--md-sys-color-surface-container-high'] = '#ece6f0';
+      C.light['--md-sys-color-surface-container-highest'] = '#e6e0e9';
+      C.light['--md-sys-color-on-surface'] = '#1c1b1f';
+      C.light['--md-sys-color-on-primary'] = '#ffffff';
+      C.light['--md-sys-color-primary-container'] = '#eaddff';
+      C.light['--md-sys-color-on-primary-container'] = '#21005d';
+      C.light['--md-sys-color-secondary-container'] = '#e8def8';
+      C.light['--md-sys-color-on-secondary-container'] = '#1d192b';
+      C.light['--md-sys-color-tertiary-container'] = '#eed1ff';
+      C.light['--md-sys-color-on-tertiary-container'] = '#2b0f48';
+      C.light['--md-sys-color-error-container'] = '#f9dedc';
+      C.light['--md-sys-color-on-error-container'] = '#410e0b';
+      C.light['--md-sys-color-outline'] = '#79747e';
+      C.light['--md-sys-color-outline-variant'] = '#cac4d0';
+      C.light['--md-sys-color-on-surface-variant'] = '#49454f';
+
+      C.dark['--md-sys-color-surface'] = '#141318';
+      C.dark['--md-sys-color-surface-container-high'] = '#1e1c20';
+      C.dark['--md-sys-color-surface-container-highest'] = '#232126';
+      C.dark['--md-sys-color-on-surface'] = '#e6e0e9';
+      C.dark['--md-sys-color-on-primary'] = '#381e72';
+      C.dark['--md-sys-color-primary-container'] = '#4f378b';
+      C.dark['--md-sys-color-on-primary-container'] = '#eaddff';
+      C.dark['--md-sys-color-secondary-container'] = '#4a4458';
+      C.dark['--md-sys-color-on-secondary-container'] = '#e8def8';
+      C.dark['--md-sys-color-tertiary-container'] = '#492870';
+      C.dark['--md-sys-color-on-tertiary-container'] = '#eed1ff';
+      C.dark['--md-sys-color-error-container'] = '#8c1d18';
+      C.dark['--md-sys-color-on-error-container'] = '#f9dedc';
+      C.dark['--md-sys-color-outline'] = '#938f99';
+      C.dark['--md-sys-color-outline-variant'] = '#49454f';
+      C.dark['--md-sys-color-on-surface-variant'] = '#cac4d0';
+
+      // Per-preset primary colors (approximate, covers first visit before JS loads)
+      var P = {
+        blue:   { dark: '#88abe7', light: '#1157CE' },
+        yellow: { dark: '#c7a783', light: '#8F4E06' },
+        red:    { dark: '#d9928f', light: '#B3251E' },
+        purple: { dark: '#ba9ce9', light: '#7438D2' },
+        green:  { dark: '#80b69a', light: '#006C35' },
+        orange: { dark: '#cda380', light: '#9A4600' },
+        pink:   { dark: '#db86b7', light: '#B60D6E' },
+        cyan:   { dark: '#80b4be', light: '#00687C' },
+        grey:   { dark: '#afafaf', light: '#5E5E5E' },
+        monet:  { dark: '#d0bcff', light: '#6750a4' },
+      };
+
+      var colors = C[resolved];
+      var p = P[preset] || P.monet;
+      colors['--md-sys-color-primary'] = p[resolved];
+
+      for (var key in colors) {
+        if (colors.hasOwnProperty(key)) root.setProperty(key, colors[key]);
+      }
     })();
   </script>
 </head>
@@ -60,10 +143,12 @@
             </div>
           </md-filled-card>
 
-          <button id="refresh-btn" class="md3-tonal">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          <md-filled-tonal-button id="refresh-btn">
+            <span slot="icon" style="display:inline-flex;align-items:center;width:18px;height:18px">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </span>
             <span data-i18n="home_refresh">Refresh Info</span>
-          </button>
+          </md-filled-tonal-button>
 
           <div class="info-grid">
 
@@ -120,9 +205,9 @@
             </div>
 
             <div class="kic-provider-row">
-              <md-outlined-select id="kb-provider" class="kic-provider-select">
-                <md-select-option value="auto" selected><div slot="headline" data-i18n="kb_provider_auto">Auto</div></md-select-option>
-              </md-outlined-select>
+              <select id="kb-provider" class="kic-provider-select">
+                <option value="auto" data-i18n="kb_provider_auto">Auto</option>
+              </select>
             </div>
 
             <md-filled-button class="kic-install-btn" id="kb-install-btn">
@@ -320,6 +405,17 @@
               <md-ripple></md-ripple>
             </div>
 
+            <div class="list-item list-item--toggle" id="toggle-prop_handler-row">
+              <div class="li-icon"><md-icon aria-hidden="true">lock</md-icon></div>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="control_toggle_prop_handler">Boot State Props</div>
+                <span class="supporting-text" data-i18n="control_toggle_prop_handler_desc">Reset boot state properties (vbmeta, verifiedboot, flash.locked) at boot</span>
+              </div>
+              <div class="spacer"></div>
+              <md-switch icons id="toggle-prop_handler"></md-switch>
+              <md-ripple></md-ripple>
+            </div>
+
             <div class="list-item list-item--toggle" id="toggle-bootloader_spoofer-row">
               <div class="li-icon"><md-icon aria-hidden="true">lock</md-icon></div>
               <div class="list-item-content">
@@ -422,9 +518,10 @@
 
           <h2 class="section-pill" data-i18n="settings_language">Language</h2>
           <md-outlined-card class="settings-card">
-            <md-outlined-select id="language-select">
-              <md-icon slot="leading-icon" aria-hidden="true">language</md-icon>
-            </md-outlined-select>
+            <div class="select-with-icon">
+              <md-icon aria-hidden="true">language</md-icon>
+              <select id="language-select"></select>
+            </div>
           </md-outlined-card>
 
           <h2 class="section-pill" data-i18n="settings_appearance">Appearance</h2>

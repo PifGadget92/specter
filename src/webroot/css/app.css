@@ -82,7 +82,7 @@ section:not([hidden]) {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  animation: page-enter 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: page-enter 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes page-enter {
@@ -266,8 +266,25 @@ section:not([hidden]) {
 
 .kic-provider-select {
   width: 100%;
-  --md-outlined-select-container-shape: 14px;
-  --md-outlined-select-outline-color: var(--md-sys-color-outline);
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='20' viewBox='0 -960 960 960' width='20' fill='%23938f99'%3E%3Cpath d='M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 20px;
+  padding-right: 40px;
+}
+.kic-provider-select:focus {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: -1px;
 }
 
 .kic-install-btn {
@@ -454,6 +471,15 @@ section:not([hidden]) {
   gap: 8px;
   min-height: 96px;
   --md-filled-card-container-color: var(--md-sys-color-surface-container-highest);
+}
+
+.info-grid {
+  animation: grid-entrance 0.6s ease-out both;
+}
+
+@keyframes grid-entrance {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 #version-info-card {
@@ -717,9 +743,41 @@ section:not([hidden]) {
   margin: 0;
 }
 
-md-outlined-select,
 md-outlined-segmented-button-set {
   width: 100%;
+}
+
+.select-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.select-with-icon md-icon {
+  color: var(--md-sys-color-primary);
+  flex-shrink: 0;
+  font-size: 20px;
+}
+.select-with-icon select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='20' viewBox='0 -960 960 960' width='20' fill='%23938f99'%3E%3Cpath d='M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 20px;
+  padding-right: 40px;
+}
+.select-with-icon select:focus {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: -1px;
 }
 
 md-divider.settings-divider {
@@ -1421,34 +1479,6 @@ md-filled-tonal-button {
   padding: 0;
   white-space: pre-wrap;
   word-break: break-all;
-}
-
-.md3-tonal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 24px;
-  min-height: 40px;
-  border: none;
-  border-radius: var(--md-sys-shape-corner-full, 9999px);
-  background: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.md3-tonal:disabled {
-  opacity: 0.38;
-  pointer-events: none;
-}
-
-.md3-tonal svg {
-  flex-shrink: 0;
 }
 
 /* ===== Target App Overlay ===== */

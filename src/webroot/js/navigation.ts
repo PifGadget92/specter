@@ -14,13 +14,41 @@ export function wireNavigation() {
 
   let lastClickTab: string | null = null;
   let clickTimer: ReturnType<typeof setTimeout> | null = null;
+  let exitStatePushed = false;
+
+  const loadedMWC = new Set<string>();
 
   function reposition(tab: HTMLElement) {
     indicator.style.left = tab.offsetLeft + 'px';
     indicator.style.width = tab.offsetWidth + 'px';
   }
 
-  function activateTab(tab: HTMLElement) {
+  function getCurrentPage(): string {
+    return document.querySelector('.nav-tab--active')?.getAttribute('data-page') || 'home-page';
+  }
+
+  async function loadPageMWC(pageId: string) {
+    if (loadedMWC.has(pageId)) return;
+    loadedMWC.add(pageId);
+    switch (pageId) {
+      case 'tools-page':
+        await import('./material-tools.js');
+        break;
+      case 'control-page':
+        await import('./material-control.js');
+        break;
+      case 'settings-page':
+        await import('./material-settings.js');
+        const { initThemeUI } = await import('./theme.js');
+        await initThemeUI().catch(() => {});
+        break;
+    }
+  }
+
+  async function activateTab(tab: HTMLElement) {
+    const pageId = tab.dataset.page || '';
+    await loadPageMWC(pageId);
+
     const oldTab = document.querySelector('.nav-tab--active');
     if (oldTab && oldTab !== tab) {
       oldTab.classList.remove('nav-tab--active');
@@ -31,17 +59,31 @@ export function wireNavigation() {
     tab.setAttribute('aria-current', 'page');
     tab.querySelector('.nav-icon')?.classList.add('nav-icon--filled');
     reposition(tab);
-    const pageId = tab.dataset.page || '';
     pages.forEach((el) => { el.hidden = el.id !== pageId; });
-    const hash = pageId.replace('-page', '');
-    if (location.hash !== `#${hash}`) history.pushState(null, '', `#${hash}`);
+
+    if (pageId !== 'home-page' && !exitStatePushed) {
+      history.pushState(null, '');
+      exitStatePushed = true;
+    }
   }
 
-  function navigateTo(hash: string) {
-    const target = hash.replace('#', '') + '-page';
-    const tab = Array.from(navTabs).find(t => (t as HTMLElement).dataset.page === target) as HTMLElement | null;
-    if (tab && !tab.classList.contains('nav-tab--active')) activateTab(tab);
+  function navigateHome() {
+    const homeTab = Array.from(navTabs).find(
+      t => (t as HTMLElement).dataset.page === 'home-page'
+    ) as HTMLElement | null;
+    if (homeTab && !homeTab.classList.contains('nav-tab--active')) {
+      activateTab(homeTab);
+    }
   }
+
+  window.addEventListener('popstate', () => {
+    exitStatePushed = false;
+    if (getCurrentPage() === 'home-page') {
+      window.close();
+    } else {
+      navigateHome();
+    }
+  });
 
   navTabs.forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -62,17 +104,13 @@ export function wireNavigation() {
     });
   });
 
-  window.addEventListener('popstate', () => {
-    navigateTo(location.hash || '#home');
-  });
-
   window.addEventListener('resize', () => {
     const active = document.querySelector('.nav-tab--active') as HTMLElement | null;
     if (active) reposition(active);
   });
 
   requestAnimationFrame(() => {
-    navigateTo('#home');
+    navigateHome();
     const active = document.querySelector('.nav-tab--active') as HTMLElement | null;
     if (active) reposition(active);
   });

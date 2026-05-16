@@ -1,14 +1,11 @@
 import { cfgGet, cfgSet } from './cfg.js';
 import { fetchJson } from './utils.js';
+import enStrings from '../lang/source/string.json';
 
 let currentStrings: Record<string, string> = {};
-let fallbackStrings: Record<string, string> = {};
+const fallbackStrings: Record<string, string> = enStrings;
 
 export async function initI18n() {
-  try {
-    fallbackStrings = await fetchJson(`lang/source/string.json?ts=${Date.now()}`) || {};
-  } catch (e) { console.warn('Failed to load fallback strings:', e); fallbackStrings = {}; }
-
   const saved = await cfgGet('lang', 'auto') || 'auto';
   let langCode: string;
   if (saved === 'auto') {
@@ -23,20 +20,36 @@ export async function initI18n() {
 }
 
 export async function applyLanguage(langCode: string) {
-  const url = langCode === 'en'
-    ? `lang/source/string.json?ts=${Date.now()}`
-    : `lang/${langCode}.json?ts=${Date.now()}`;
-
-  try {
-    const res = await fetch(url);
-    currentStrings = await res.json();
-  } catch (e) { console.warn('Failed to load language:', e);
-    currentStrings = {};
+  if (langCode === 'en') {
+    currentStrings = enStrings;
+    applyTranslations();
+    document.documentElement.dir = 'ltr';
+    cfgSet('lang', langCode);
+    document.dispatchEvent(new CustomEvent('languageChanged', { detail: { langCode } }));
+    return;
   }
 
-  applyTranslations();
-  cfgSet('lang', langCode);
+  const cached = localStorage.getItem('i18n_' + langCode);
+  if (cached) {
+    try {
+      currentStrings = JSON.parse(cached);
+      applyTranslations();
+    } catch (e) { /* ignore corrupt cache */ }
+  }
+
+  try {
+    const res = await fetch(`lang/${langCode}.json?ts=${Date.now()}`);
+    const data = await res.json();
+    currentStrings = data;
+    applyTranslations();
+    localStorage.setItem('i18n_' + langCode, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to load language:', e);
+    if (!cached) currentStrings = {};
+  }
+
   document.documentElement.dir = langCode === 'ar' ? 'rtl' : 'ltr';
+  cfgSet('lang', langCode);
   document.dispatchEvent(new CustomEvent('languageChanged', { detail: { langCode } }));
 }
 
@@ -102,13 +115,8 @@ function setAriaLabel(el: Element, val: string) {
 }
 
 function wireLanguageSelect(currentLang: string) {
-  const select = document.getElementById('language-select');
+  const select = document.getElementById('language-select') as HTMLSelectElement | null;
   if (!select) return;
-
-  Promise.all([
-    customElements.whenDefined('md-outlined-select'),
-    customElements.whenDefined('md-select-option'),
-  ]).then(async () => {
 
   const LANGUAGES: [string, string, string][] = [
     ['en', '🇬🇧', 'English'],
@@ -119,24 +127,19 @@ function wireLanguageSelect(currentLang: string) {
   ];
 
   LANGUAGES.forEach(([code, flag, name]) => {
-    const item = document.createElement('md-select-option');
-    (item as any).value = code;
-    const headline = document.createElement('div');
-    headline.slot = 'headline';
-    headline.textContent = `${flag} ${name}`;
-    item.appendChild(headline);
+    const item = document.createElement('option');
+    item.value = code;
+    item.textContent = `${flag} ${name}`;
     select.appendChild(item);
   });
 
+  select.value = currentLang;
+
   select.addEventListener('change', async () => {
     try {
-      await applyLanguage((select as any).value);
+      await applyLanguage(select.value);
     } catch (e) {
       console.warn('Language change failed:', e);
     }
-  });
-
-  await new Promise(r => requestAnimationFrame(r));
-  (select as any).value = currentLang;
   });
 }

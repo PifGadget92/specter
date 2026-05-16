@@ -6,7 +6,7 @@ let MODULE: ModulePaths | null = null;
 
 export async function initBridge(): Promise<void> {
   try {
-    const r = await fetch('/json/module_paths.json?ts=' + Date.now());
+    const r = await fetch('/json/module_paths.json');
     MODULE = await r.json() as ModulePaths;
     if (MODULE?.MODDIR) {
       MODULE.MODDIR = MODULE.MODDIR.replace('/modules_update/', '/modules/');

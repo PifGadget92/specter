@@ -11,15 +11,6 @@ interface MdDialog extends HTMLElement {
   type?: string;
 }
 
-interface MdOutlinedSelect extends HTMLElement {
-  value: string;
-  _listenerAttached?: boolean;
-}
-
-interface MdSelectOptionElement extends HTMLElement {
-  value: string;
-}
-
 interface MdChip extends HTMLElement {
   label: string;
   selected: boolean;
@@ -76,9 +67,6 @@ declare global {
   interface HTMLElementTagNameMap {
     'md-switch': MdSwitch;
     'md-dialog': MdDialog;
-    'md-select': MdOutlinedSelect;
-    'md-select-option': MdSelectOptionElement;
-    'md-outlined-select': MdOutlinedSelect;
     'md-chip': MdChip;
     'md-filter-chip': MdFilterChip;
     'md-assist-chip': MdAssistChip;

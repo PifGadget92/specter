@@ -1,4 +1,4 @@
-import { CorePalette, Scheme } from '@material/material-color-utilities';
+import { getPresetColors, presetClosestTo } from './color-utils.js';
 import { cfgGet, cfgSet } from './cfg.js';
 import { exec } from './bridge.js';
 
@@ -15,26 +15,115 @@ const PRESETS: Record<string, string> = {
 };
 
 let currentPreset: string = 'blue';
-let currentSeed: string | null = null;
+let currentMappedPreset: string = 'blue';
 
 export async function initTheme(savedMode: string) {
-  const preset = await cfgGet('theme_preset', 'monet') || 'monet';
-  currentPreset = preset;
+  currentPreset = await cfgGet('theme_preset', 'monet') || 'monet';
   const mode = savedMode || 'dark';
 
-  await customElements.whenDefined('md-filter-chip');
-  await customElements.whenDefined('md-outlined-segmented-button');
-  document.querySelectorAll('.preset-chip').forEach(chip => {
-    (chip as any).selected = (chip as HTMLElement).dataset.preset === preset;
-  });
-
-  if (preset === 'monet') {
+  if (currentPreset === 'monet') {
     await applyMonetPreset(mode);
   } else {
     applyMode(mode);
   }
 
   wireThemeControls();
+}
+
+export async function initThemeUI() {
+  const preset = currentPreset;
+
+  if (customElements.get('md-filter-chip')) {
+    document.querySelectorAll('.preset-chip').forEach(chip => {
+      (chip as any).selected = (chip as HTMLElement).dataset.preset === preset;
+    });
+  }
+
+  if (customElements.get('md-outlined-segmented-button')) {
+    const mode = await cfgGet('theme', 'dark') || 'dark';
+    const group = document.getElementById('theme-mode-group');
+    if (group) {
+      group.querySelectorAll('md-outlined-segmented-button').forEach(btn => {
+        (btn as any).selected = btn.getAttribute('value') === mode;
+      });
+    }
+  }
+}
+
+function resolveMode(mode: string): string {
+  return mode === 'auto'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : mode;
+}
+
+async function applyMonetPreset(mode: string) {
+  const resolved = resolveMode(mode);
+  const isDark = resolved === 'dark';
+  let seed = (await cfgGet('monet_seed')) as string | null;
+
+  if (!seed) {
+    seed = await extractMonetColor();
+    if (seed) cfgSet('monet_seed', seed);
+  }
+
+  if (!seed) {
+    currentMappedPreset = 'blue';
+    applyNamedPreset('blue', isDark);
+    return;
+  }
+
+  currentMappedPreset = presetClosestTo(seed);
+  document.documentElement.setAttribute('data-theme', mode);
+  document.documentElement.setAttribute('data-theme-preset', 'monet');
+  document.documentElement.setAttribute('data-theme-resolved', resolved);
+  cfgSet('theme_preset', 'monet');
+  applyNamedPreset(currentMappedPreset, isDark);
+}
+
+function applyMode(mode: string) {
+  const resolved = resolveMode(mode);
+  document.documentElement.setAttribute('data-theme', mode);
+  document.documentElement.setAttribute('data-theme-resolved', resolved);
+  document.documentElement.style.colorScheme = resolved;
+  cfgSet('theme', mode);
+
+  const name = currentPreset === 'monet' ? currentMappedPreset : currentPreset;
+  applyNamedPreset(name, resolved === 'dark');
+}
+
+function applyPreset(preset: string) {
+  if (preset === 'monet') {
+    document.querySelectorAll('.preset-chip').forEach(chip => {
+      (chip as any).selected = (chip as HTMLElement).dataset.preset === 'monet';
+    });
+    applyMonetPreset(document.documentElement.getAttribute('data-theme') || 'dark');
+    return;
+  }
+  currentPreset = preset;
+  document.documentElement.setAttribute('data-theme-preset', preset);
+  cfgSet('theme_preset', preset);
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    (chip as any).selected = (chip as HTMLElement).dataset.preset === preset;
+  });
+  const isDark = document.documentElement.getAttribute('data-theme-resolved') === 'dark';
+  applyNamedPreset(preset, isDark);
+}
+
+function applyNamedPreset(name: string, isDark: boolean, seed?: string) {
+  const vars = getPresetColors(name, isDark);
+  if (!vars) return;
+  const root = document.documentElement;
+  for (const [key, val] of Object.entries(vars)) {
+    root.style.setProperty(key, val);
+  }
+  try {
+    const s = seed || PRESETS[name] || '';
+    if (s) {
+      localStorage.setItem('specter_theme_vars', JSON.stringify(vars));
+      localStorage.setItem('specter_theme_resolved', isDark ? 'dark' : 'light');
+      localStorage.setItem('specter_theme_seed', s);
+    }
+  } catch (e) {}
 }
 
 async function extractMonetColor(): Promise<string | null> {
@@ -69,99 +158,6 @@ async function extractMonetColor(): Promise<string | null> {
     console.warn('Failed to extract monet color:', e);
   }
   return null;
-}
-
-function resolveMode(mode: string): string {
-  return mode === 'auto'
-    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    : mode;
-}
-
-async function applyMonetPreset(mode: string) {
-  let seed = (await cfgGet('monet_seed')) as string | null;
-  if (!seed) {
-    seed = await extractMonetColor();
-    if (seed) {
-      cfgSet('monet_seed', seed);
-    } else {
-      seed = PRESETS.blue;
-    }
-  }
-  currentSeed = seed;
-
-  const resolved = resolveMode(mode);
-  document.documentElement.setAttribute('data-theme', mode);
-  document.documentElement.setAttribute('data-theme-preset', 'monet');
-  document.documentElement.setAttribute('data-theme-resolved', resolved);
-  cfgSet('theme_preset', 'monet');
-  generateScheme(seed, resolved === 'dark');
-}
-
-function applyMode(mode: string) {
-  const resolved = resolveMode(mode);
-  document.documentElement.setAttribute('data-theme', mode);
-  document.documentElement.setAttribute('data-theme-resolved', resolved);
-  document.documentElement.style.colorScheme = resolved;
-  cfgSet('theme', mode);
-  const group = document.getElementById('theme-mode-group');
-  if (group) {
-    group.querySelectorAll('md-outlined-segmented-button').forEach(btn => {
-      (btn as any).selected = btn.getAttribute('value') === mode;
-    });
-  }
-
-  const seed = currentPreset === 'monet' ? currentSeed : PRESETS[currentPreset];
-  generateScheme(seed, resolved === 'dark');
-}
-
-function applyPreset(preset: string) {
-  if (preset === 'monet') {
-    document.querySelectorAll('.preset-chip').forEach(chip => {
-      (chip as any).selected = (chip as HTMLElement).dataset.preset === 'monet';
-    });
-    applyMonetPreset(document.documentElement.getAttribute('data-theme') || 'dark');
-    return;
-  }
-  const seed = PRESETS[preset];
-  if (!seed) return;
-  currentSeed = null;
-  currentPreset = preset;
-  document.documentElement.setAttribute('data-theme-preset', preset);
-  cfgSet('theme_preset', preset);
-  document.querySelectorAll('.preset-chip').forEach(chip => {
-    (chip as any).selected = (chip as HTMLElement).dataset.preset === preset;
-  });
-  const resolved = document.documentElement.getAttribute('data-theme-resolved') === 'dark';
-  generateScheme(seed, resolved);
-}
-
-function generateScheme(seed: string | null | undefined, isDark: boolean) {
-  if (!seed) return;
-  const argb = parseInt(seed.slice(1), 16) | 0xFF000000;
-  const scheme = isDark ? Scheme.dark(argb) : Scheme.light(argb);
-  const props: Record<string, number> = scheme.toJSON();
-
-  const core = CorePalette.contentOf(argb);
-  const n1 = core.n1;
-  if (isDark) {
-    props.surfaceContainerLowest = n1.tone(4);
-    props.surfaceContainerLow = n1.tone(10);
-    props.surfaceContainer = n1.tone(12);
-    props.surfaceContainerHigh = n1.tone(17);
-    props.surfaceContainerHighest = n1.tone(22);
-  } else {
-    props.surfaceContainerLowest = n1.tone(100);
-    props.surfaceContainerLow = n1.tone(96);
-    props.surfaceContainer = n1.tone(94);
-    props.surfaceContainerHigh = n1.tone(92);
-    props.surfaceContainerHighest = n1.tone(90);
-  }
-
-  const root = document.documentElement;
-  for (const [key, value] of Object.entries(props)) {
-    const cssKey = '--md-sys-color-' + key.replace(/([A-Z])/g, '-$1').toLowerCase();
-    root.style.setProperty(cssKey, '#' + (value & 0x00FFFFFF).toString(16).padStart(6, '0'));
-  }
 }
 
 function wireThemeControls() {
