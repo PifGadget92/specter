@@ -50,7 +50,7 @@ _pif_name=$(_pif_prop)
 [ -n "$_pif_name" ] && ui_print "- $_pif_name found"
 unset _pif_name
 
-# One-time TEE status check — APK attestation
+# TEE status check — read from cache only
 _tee=
 if [ -f "$TEE_STATUS" ]; then
   _tee_val=$(grep -E '^(teeBroken|tee_broken)=' "$TEE_STATUS" 2>/dev/null | cut -d= -f2)
@@ -60,35 +60,18 @@ if [ -f "$TEE_STATUS" ]; then
   esac
   unset _tee_val
 fi
-if [ -z "$_tee" ]; then
-  if pm list packages org.specter.teecheck 2>/dev/null | grep -q org.specter.teecheck; then
-    _tee=$(content query --uri content://org.specter.teecheck/check 2>/dev/null \
-      | grep -o 'status=[a-z]*' | cut -d= -f2)
-  elif check_network; then
-    TMP_APK="$MODPATH/teecheck.apk"
-    ( download "$TEE_CHECK_URL" > "$TMP_APK" ) & _dl_pid=$!
-    _dl_i=0; while kill -0 $_dl_pid 2>/dev/null && [ $_dl_i -lt 10 ]; do sleep 1; _dl_i=$((_dl_i + 1)); done
-    kill $_dl_pid 2>/dev/null || true; wait $_dl_pid 2>/dev/null || true
-    if [ -f "$TMP_APK" ] && [ -s "$TMP_APK" ]; then
-      pm install "$TMP_APK" 2>/dev/null && {
-        _tee=$(content query --uri content://org.specter.teecheck/check 2>/dev/null \
-          | grep -o 'status=[a-z]*' | cut -d= -f2)
-        pm uninstall org.specter.teecheck 2>/dev/null || true
-      }
-      rm -f "$TMP_APK"
-    fi
-  else
-    ui_print "  No internet, skipping TEE check"
-  fi
-fi
 case "$_tee" in
   normal|broken)
-    mkdir -p "$SPECTER_DIR"
-    echo "tee_broken=$([ "$_tee" = "normal" ] && echo false || echo true)" > "$TEE_STATUS"
     ui_print "- TEE: $_tee"
     ;;
 esac
-unset _tee _dl_i _dl_pid TMP_APK
+unset _tee
+
+if [ -f "$TEE_HASH" ]; then
+  _hash=$(cat "$TEE_HASH" 2>/dev/null)
+  [ -n "$_hash" ] && ui_print "- TEE hash: $_hash"
+  unset _hash
+fi
 
 if [ "$_ts_found" = true ]; then
   DECODE_FILE="$TRICKY_DIR/keybox_decode"

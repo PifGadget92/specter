@@ -3,9 +3,10 @@
 set -e
 MODDIR=${0%/*}
 
-# shellcheck disable=SC3040
-set +o standalone
-unset ASH_STANDALONE
+# only BusyBox ash supports 'standalone' option
+case "$(readlink /proc/$$/exe 2>/dev/null)" in
+  *busybox) set +o standalone; unset ASH_STANDALONE ;;
+esac
 
 . "$MODDIR/lib/common.sh"
 . "$MODDIR/lib/config_env.sh"

@@ -160,8 +160,10 @@ tc04_both_types() {
   assert_eq "passive nohello default" "priority_module" "$(cfg_get "conflict_zygisk_nohello" "")" || rc=1
   assert_eq "passive treat_wheel default" "priority_module" "$(cfg_get "conflict_treat_wheel" "")" || rc=1
   assert_eq "aggressive tsupport default" "priority_specter" "$(cfg_get "conflict_tsupport-advance" "")" || rc=1
-  # boot_hardening claimed by BOTH passive modules → blocked
+  # boot_hardening claimed by zygisk_nohello (passive) → blocked
   assert_eq "boot_hardening blocked by passives" "0" "$(cfg_get "toggle_boot_hardening" 1)" || rc=1
+  # prop_handler claimed by treat_wheel (passive) → blocked
+  assert_eq "prop_handler blocked by treat_wheel" "0" "$(cfg_get "toggle_prop_handler" 1)" || rc=1
   # suspicious_props only claimed by sensitive_props (not installed) → stays 1
   assert_eq "suspicious_props untouched" "1" "$(cfg_get "toggle_suspicious_props" 1)" || rc=1
   return $rc

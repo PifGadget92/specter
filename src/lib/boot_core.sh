@@ -17,11 +17,11 @@ if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
 fi
 
 # Boot-time features — single authoritative list, all dispatched as scripts
-for _bf in recovery boot_hardening security_patch suspicious_props rom_spoof bootloader_spoofer lsposed; do
+for _bf in recovery boot_hardening security_patch suspicious_props rom_spoof bootloader_spoofer lsposed tee; do
   case "$_bf" in *[!a-zA-Z0-9_-]*) log "BOOT" "Skipping invalid feature: $_bf"; continue ;; esac
   _feature_should_run "$_bf" || continue
-  if [ "$_bf" = "rom_spoof" ]; then
-    ( sh "$MODDIR/features/rom_spoof.sh" >/dev/null 2>&1 ) &
+  if [ "$_bf" = "tee" ] || [ "$_bf" = "rom_spoof" ]; then
+    ( sh "$MODDIR/features/$_bf.sh" >/dev/null 2>&1 ) &
   else
     sh "$MODDIR/features/$_bf.sh" >/dev/null 2>&1 || true
   fi
@@ -36,8 +36,9 @@ if [ ! -d "/data/adb/modules/tricky_store" ] && [ ! -d "/data/adb/modules_update
 
 else
   _cf=""
-  while IFS='|' read -r _id _name _rem; do
+  while IFS='|' read -r _id _name _scripts _features _type; do
     [ -z "$_id" ] && continue
+    [ "$_type" != "aggressive" ] && continue
     _conflict_detect "$_id" || continue
     _cf="$_name"
     break
@@ -47,9 +48,9 @@ CF_EOF
 
   if [ -n "$_cf" ]; then
     cfg_set "override.description" "🚨 Conflict: $_cf"
-    unset _cf _id _name _rem
+    unset _cf _id _name _scripts _features _type
   else
-    unset _cf _id _name _rem
+    unset _cf _id _name _scripts _features _type
 
     # Keybox dashboard
     _kb_src=$(grep -o '"source":"[^"]*"' "$MODDIR/webroot/json/keybox_info.json" 2>/dev/null | cut -d'"' -f4)
@@ -82,7 +83,7 @@ fi
 (
   sleep 120
   log "BOOT" "Delayed spoofing — reapplying critical props"
-  sp_try ro.crypto.state encrypted
+  apply_boot_props
   hide_recovery_folders
 ) &
 

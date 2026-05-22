@@ -1,8 +1,8 @@
 import { getModuleDir, exec, spawnScript } from './bridge.js';
 import { cfgSet, cfgGet, cfgFlush } from './cfg.js';
 import { getTranslation } from './i18n.js';
-import { escapeHtml, shellEscape, fetchJson } from './utils.js';
-import { showToast, closeToast } from './toast.js';
+import { shellEscape, fetchJson } from './utils.js';
+import { showToast } from './toast.js';
 import { appendToOutput } from './terminal.js';
 import { openFileBrowser } from './file-browser.js';
 import { openRecentActivity } from './history.js';
@@ -204,111 +204,24 @@ export async function openCustomKeyboxDialog() {
     });
 
     if (privateChoice) {
-      if (text.startsWith('http://') || text.startsWith('https://')) {
-        cfgSet('kb_custom_type', 'url');
-      } else {
-        cfgSet('kb_custom_type', 'path');
-      }
-      cfgSet('kb_custom_value', text);
       cfgSet('kb_private', 'true');
-      await cfgFlush();
-      const result: any = await exec(`sh ${shellEscape(moddir + '/features/keybox.sh')}`);
-      if (result.code === 0) {
-        showToast(t('custom_kb_installed', 'Custom keybox installed'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 3000 });
-      } else {
-        showToast(t('custom_kb_install_failed', 'Install failed'), { icon: 'error', type: 'error' as any, autoCloseDelay: 5000 });
-      }
-      dialog.close();
-      return;
+    } else {
+      cfgSet('kb_private', '');
     }
-
-    const detectingToast = showToast(t('custom_kb_detecting', 'Detecting keybox...'), { icon: 'info', type: 'info' as any, autoCloseDelay: 30000 });
-
-    try {
-      let serial = '';
-
-      if (text.startsWith('http://') || text.startsWith('https://')) {
-        const result: any = await exec(
-          `wget -qO /data/local/tmp/_kb_check.xml ${shellEscape(text)} 2>/dev/null || ` +
-          `curl -s ${shellEscape(text)} > /data/local/tmp/_kb_check.xml 2>/dev/null && ` +
-          `. ${moddir}/lib/common.sh && decode_keybox_serial /data/local/tmp/_kb_check.xml`
-        );
-        serial = (result.stdout || '').trim();
-      } else if (text.startsWith('/')) {
-        const result: any = await exec(
-          `. ${moddir}/lib/common.sh && decode_keybox_serial ${shellEscape(text)}`
-        );
-        serial = (result.stdout || '').trim();
-      }
-
-      let catalogInfo: any = null;
-      if (serial) {
-        try {
-          const catalogData = await fetchJson<CatalogJson>(API_URLS.KEY_CATALOG);
-          if (catalogData?.entries) {
-            catalogInfo = catalogData.entries.find(e => e.serial === serial) || null;
-          }
-        } catch (e) {
-          console.warn('Catalog fetch failed:', e);
-        }
-      }
-
-      const detectedDialog = document.createElement('md-dialog');
-      detectedDialog.className = 'detected-dialog';
-      detectedDialog.setAttribute('type', 'alert');
-      detectedDialog.innerHTML = `
-        <div slot="headline">${t('custom_kb_detected', 'Keybox Detected')}</div>
-        <div slot="content" class="detected-dialog-content">
-          ${catalogInfo ? `
-            <span class="detected-dialog-icon"><md-icon>verified_user</md-icon></span>
-            <p class="detected-dialog-status">${t('custom_kb_known', 'Known Keybox')}</p>
-            <div class="detected-dialog-chip-row">
-              <md-chip style="--md-chip-label-text-color:var(--md-sys-color-primary)">${escapeHtml(catalogInfo.source)}</md-chip>
-              <span style="font-size:0.8125rem;color:var(--md-sys-color-on-surface-variant)">${escapeHtml(catalogInfo.version)}</span>
-            </div>
-            <md-chip style="--md-chip-label-text-color:${catalogInfo.revoked ? 'var(--md-sys-color-error)' : 'var(--md-sys-color-tertiary)'}">${catalogInfo.revoked ? t('custom_kb_revoked', 'Revoked') : t('custom_kb_active', 'Active')}</md-chip>
-          ` : `
-            <span class="detected-dialog-icon"><md-icon>search_off</md-icon></span>
-            <p class="detected-dialog-status">${t('custom_kb_not_found', 'Not Found in Catalog')}</p>
-            <p class="detected-dialog-desc">${t('custom_kb_not_found_desc', 'This keybox could not be matched to any known source')}</p>
-          `}
-        </div>
-        <div slot="actions">
-          <md-text-button id="kb-detect-cancel">${t('dialog_cancel', 'Cancel')}</md-text-button>
-          <div class="spacer"></div>
-          <md-filled-button id="kb-detect-apply" class="detected-dialog-apply">${t('custom_kb_apply_confirm', 'Apply')}</md-filled-button>
-        </div>
-      `;
-      document.body.appendChild(detectedDialog);
-
-      detectedDialog.querySelector('#kb-detect-cancel')!.addEventListener('click', () => detectedDialog.close());
-      detectedDialog.querySelector('#kb-detect-apply')!.addEventListener('click', async () => {
-        if (text.startsWith('http://') || text.startsWith('https://')) {
-          cfgSet('kb_custom_type', 'url');
-        } else {
-          cfgSet('kb_custom_type', 'path');
-        }
-        cfgSet('kb_custom_value', text);
-        cfgSet('kb_private', '');
-        await cfgFlush();
-        const result: any = await exec(`sh ${shellEscape(moddir + '/features/keybox.sh')}`);
-        if (result.code === 0) {
-          showToast(t('custom_kb_installed', 'Custom keybox installed'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 3000 });
-        } else {
-          showToast(t('custom_kb_install_failed', 'Install failed'), { icon: 'error', type: 'error' as any, autoCloseDelay: 5000 });
-        }
-        detectedDialog.close();
-        dialog.close();
-      });
-      detectedDialog.addEventListener('close', () => document.body.removeChild(detectedDialog));
-      closeToast(detectingToast!);
-      detectedDialog.show();
-
-    } catch (e) {
-      console.warn('Keybox detection failed:', e);
-      closeToast(detectingToast!);
-      showToast(t('toast_detect_failed', 'Failed to detect keybox'), { icon: 'error', type: 'error' as any, autoCloseDelay: 3000 });
+    if (text.startsWith('http://') || text.startsWith('https://')) {
+      cfgSet('kb_custom_type', 'url');
+    } else {
+      cfgSet('kb_custom_type', 'path');
     }
+    cfgSet('kb_custom_value', text);
+    await cfgFlush();
+    const result: any = await exec(`sh ${shellEscape(moddir + '/features/keybox.sh')}`);
+    if (result.code === 0) {
+      showToast(t('custom_kb_installed', 'Custom keybox installed'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 3000 });
+    } else {
+      showToast(t('custom_kb_install_failed', 'Install failed'), { icon: 'error', type: 'error' as any, autoCloseDelay: 5000 });
+    }
+    dialog.close();
   });
 
   dialog.addEventListener('close', () => {

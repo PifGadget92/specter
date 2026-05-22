@@ -20,9 +20,6 @@ export function wireSecurityPatch() {
           <md-icon-button slot="trailing-icon" id="sp-fetch" aria-label="${t('sp_fetch', 'Fetch')}">
             <md-icon>language</md-icon>
           </md-icon-button>
-          <md-icon-button slot="trailing-icon" id="sp-generate" aria-label="${t('sp_generate', 'Generate')}">
-            <md-icon>autorenew</md-icon>
-          </md-icon-button>
         </md-outlined-text-field>
       </div>
       <div slot="actions">
@@ -34,10 +31,6 @@ export function wireSecurityPatch() {
 
     const input = dialog.querySelector('#sp-input') as MdOutlinedTextField | null;
     if (input) input.value = defaultDate;
-
-    dialog.querySelector('#sp-generate')!.addEventListener('click', () => {
-      input!.value = defaultSecurityPatch();
-    });
 
     dialog.querySelector('#sp-fetch')!.addEventListener('click', async () => {
       const moddir = getModuleDir();

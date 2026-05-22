@@ -1,3 +1,35 @@
+# v1.4.1
+
+## TEE Attestation
+- **New TEE feature** (`features/tee.sh`) — runs TEE attestation via the Specter APK ContentProvider at boot, caching the result and hash. Falls back to computing the VBMeta digest from the vbmeta partition (including full chained digest via AVB chain partition descriptors + AVB footer support) when TEE is unavailable. Published to `ro.boot.vbmeta.digest` + `/data/adb/boot_hash`.
+- **VBMeta helpers extracted** — `_val`, `emit_vbmeta`, `vbmeta_digest` moved into `lib/vbmeta.sh` as a reusable library. `tee.sh` now sources it as a consumer instead of defining the functions inline. Halved `tee.sh` from 132→63 lines.
+- **Install-time TEE check removed** — `customize.sh` no longer downloads/installs the TEE check APK during module install; reads TEE status and hash from boot-time cache instead.
+- **Boot core dispatches `tee` feature** in background alongside `rom_spoof`.
+
+## Keybox
+- **Custom keybox "No" path fixed** — selecting "No" (not a private keybox) no longer forces an extra detection dialog with catalog lookup + second confirmation. The keybox is installed directly, matching the "Yes" path behavior. Removed ~90 lines of dead detection dialog code.
+- **Unused imports cleaned up** — `escapeHtml`, `closeToast` removed from keybox-ui.ts imports.
+
+## Conflict System
+- **TreatWheel reclassified** from `boot_hardening` → `prop_handler`. TreatWheel now defers prop spoofing, not boot hardening.
+- **New `prop_handler` feature toggle** added to the boot-time feature list.
+- **Aggressive-only override** — `boot_core.sh` only considers `aggressive` conflict type for the override description; passives no longer produce misleading conflict banners.
+
+## Security Patch
+- **Removed duplicate generate icon** — the trailing icon slot in the security patch dialog no longer has two overlapping buttons. Only the globe fetch icon remains.
+
+## Boot
+- **Fingerprint spoofing loop removed** from `spoof_build_props` — the per-prop fingerprint patching was redundant with the dedicated boot state props feature.
+- **Delayed boot props** switched from raw `sp_try` calls to `apply_boot_props` for consistency.
+
+## Device Info
+- **Recovery folder detection** — device-info.sh now scans for TWRP/OrangeFox/FOX/PBRP/PitchBlack Recovery directories. WebUI shows/hides the recovery toggle row based on `recovery_detected` flag.
+
+## Build & Misc
+- **BusyBox standalone fix** — `action.sh` now only disables standalone mode under BusyBox; KSU's native ash is left untouched.
+- **APK bundling** — `package.json` build step copies `src/apk/` into the module zip.
+- **README** — added "Thanks" section with project credits.
+
 # v1.4.0
 
 ## Performance

@@ -318,14 +318,6 @@ spoof_build_props() {
     *eng*)       sp_try "ro.build.flavor" "${_fb_flavor%eng}user" ;;
   esac
   unset _fb_flavor
-  for _fb_fp in $(resetprop 2>/dev/null | grep -oE 'ro\..*\.build\.fingerprint' || true); do
-    _fb_val=$(resetprop "$_fb_fp" 2>/dev/null || echo "")
-    case "$_fb_val" in
-      *userdebug*) _fb_val=$(echo "$_fb_val" | sed 's/userdebug/user/g'); sp_try "$_fb_fp" "$_fb_val" ;;
-      *test-keys*) _fb_val=$(echo "$_fb_val" | sed 's/test-keys/release-keys/g'); sp_try "$_fb_fp" "$_fb_val" ;;
-    esac
-  done
-  unset _fb_fp _fb_val
 }
 
 _pif_prop() {
@@ -663,7 +655,7 @@ EOF
 # Called by WebUI after changing a single module's priority
 apply_conflict_toggles() {
   # Boot-time toggles
-  for _ac_feature in boot_hardening security_patch suspicious_props lsposed rom_spoof bootloader_spoofer; do
+  for _ac_feature in boot_hardening prop_handler security_patch suspicious_props lsposed rom_spoof bootloader_spoofer; do
     if _conflict_claimed "$_ac_feature"; then
       cfg_set "toggle_$_ac_feature" 0
     else

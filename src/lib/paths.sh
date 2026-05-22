@@ -8,6 +8,7 @@ LOCKED_BACKUP="$TRICKY_DIR/locked.xml.bak"
 TARGET_TXT="$TRICKY_DIR/target.txt"
 SECURITY_PATCH_FILE="$TRICKY_DIR/security_patch.txt"
 TEE_STATUS="$SPECTER_DIR/tee_status"
+TEE_HASH="$SPECTER_DIR/tee_hash"
 
 # Other system paths
 SPECTER_DIR="/data/adb/Specter"

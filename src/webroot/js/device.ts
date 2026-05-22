@@ -79,8 +79,12 @@ function applyDeviceInfo(data: InfoJson) {
   setText('patch-value', data.security_patch || data.build_patch || '—');
 }
 
-function applyFlags(flags: { twrp?: boolean }) {
+function applyFlags(flags: { twrp?: boolean; recovery_detected?: boolean }) {
   if (!flags) return;
+  const recoveryRow = document.getElementById('toggle-recovery-row');
+  if (recoveryRow) {
+    recoveryRow.style.display = flags.recovery_detected ? '' : 'none';
+  }
   const recoverySwitch = document.getElementById('toggle-recovery') as any;
   if (recoverySwitch) recoverySwitch.selected = !!flags.twrp;
 }
