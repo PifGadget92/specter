@@ -12,7 +12,7 @@ import { initTerminal } from './terminal.js';
 import { openTargetAppsManager, refreshAppCatalog } from './target-apps.js';
 import { setDevMode } from './state.js';
 import { wireTopBarScroll, wireNavigation } from './navigation.js';
-import { wireToggles, wireControlToggles, refreshControlToggles, wireDevMode } from './toggles.js';
+import { wireControlToggles, refreshControlToggles, wireDevMode } from './toggles.js';
 import { wireActions, buildFriendlyNames } from './actions.js';
 import { wireSecurityPatch } from './security-patch-ui.js';
 import { wireKeyboxCard, wireKeyboxInstallButton, wireCustomKeybox, populateProviders } from './keybox-ui.js';
@@ -58,7 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireKeyboxInstallButton();
   wireTargetApps();
   wireSecurityPatch();
-  wireToggles();
   wireControlToggles();
   wireDevMode();
   buildFriendlyNames();
@@ -67,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const savedDevMode = await cfgGet('dev_mode', 'false') || 'false';
   setDevMode(savedDevMode === 'true');
   const sw = document.getElementById('dev-mode-switch') as MdSwitch | null;
-  if (sw) sw.toggleAttribute('selected', savedDevMode === 'true');
+  if (sw) sw.selected = savedDevMode === 'true';
 
   document.addEventListener('languageChanged', () => {
     const active = document.querySelector('.nav-tab--active') as HTMLElement | null;
@@ -181,7 +180,6 @@ async function wireConflictToggles() {
 
         hint.textContent = isModule ? `${t('conflict_priority_module', 'Priority →')} ${mod.friendlyName}` : t('conflict_priority_specter', 'Priority → Specter');
         showToast(`${mod.friendlyName}: ${isModule ? t('conflict_toast_module_handles', 'Module handles it') : t('conflict_toast_specter_handles', 'Specter handles it')}`, { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2500 });
-        await refreshControlToggles();
       } catch (e) {
         showToast(t('toast_failed_update', 'Failed to update'), { icon: 'error', type: 'error' as any, autoCloseDelay: 3000 });
         sw.selected = !sw.selected;

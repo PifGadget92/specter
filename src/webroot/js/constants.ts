@@ -21,9 +21,9 @@ export interface ToggleDef {
 }
 
 export const CONTROL_TOGGLES: ToggleDef[] = [
+  { id: 'toggle-recovery', key: 'toggle_recovery' },
   { id: 'toggle-boot_hardening', key: 'toggle_boot_hardening' },
   { id: 'toggle-prop_handler', key: 'toggle_prop_handler' },
-
   { id: 'toggle-lsposed', key: 'toggle_lsposed' },
   { id: 'toggle-suspicious_props', key: 'toggle_suspicious_props' },
   { id: 'toggle-action_gms', key: 'toggle_action_gms' },

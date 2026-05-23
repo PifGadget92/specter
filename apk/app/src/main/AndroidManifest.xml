@@ -3,7 +3,7 @@
     <application
         android:hasFragileUserData="true"
         android:hasCode="true"
-        android:label="TEE Boothash"
+        android:label="Checks"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.NoDisplay">
 

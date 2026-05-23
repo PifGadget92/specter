@@ -67,7 +67,6 @@ export async function refreshKeyboxStatus(): Promise<KeyboxInfoJson | null> {
 function applyAllDeviceInfo(data: InfoJson) {
   applyDeviceInfo(data);
   if (data.flags) applyFlags(data.flags);
-  if (data.keybox_format) applyKeyboxFormat(data.keybox_format);
   applyTeeStatus(data);
 }
 
@@ -84,20 +83,6 @@ function applyFlags(flags: { twrp?: boolean; recovery_detected?: boolean }) {
   const recoveryRow = document.getElementById('toggle-recovery-row');
   if (recoveryRow) {
     recoveryRow.style.display = flags.recovery_detected ? '' : 'none';
-  }
-  const recoverySwitch = document.getElementById('toggle-recovery') as any;
-  if (recoverySwitch) recoverySwitch.selected = !!flags.twrp;
-}
-
-function applyKeyboxFormat(format: string) {
-  const el = document.getElementById('keybox-format');
-  if (!el) return;
-  if (format === 'locked.xml') {
-    el.textContent = getTranslation('device_tee_sim') || 'TEE Sim';
-    el.className = 'keybox-chip keybox-chip--teesim';
-    el.style.display = '';
-  } else {
-    el.style.display = 'none';
   }
 }
 
@@ -158,6 +143,10 @@ function applyKeyboxStatus(data: KeyboxInfoJson) {
     statusEl.className = 'keybox-chip keybox-chip--revoked';
     source.className = 'keybox-chip keybox-chip--revoked';
     icon.textContent = 'gpp_bad';
+  } else if (data.softbanned) {
+    statusEl.textContent = getTranslation('custom_kb_softbanned') || 'Softbanned';
+    statusEl.className = 'keybox-chip keybox-chip--softbanned';
+    icon.textContent = 'warning';
   } else {
     statusEl.textContent = getTranslation('custom_kb_active') || 'Active';
     statusEl.className = 'keybox-chip keybox-chip--active';

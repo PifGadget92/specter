@@ -27,8 +27,6 @@ persist.zygote.app_data_isolation|critical|Zygote data isolation — root-level 
 persist.com.luckyzyx.luckytool.log.level|warning|LuckyTool Xposed module debug log
 persist.com.luckyzyx.luckytool.debug|warning|LuckyTool Xposed module debug mode
 persist.com.luckyzyx.luckytool.enable|warning|LuckyTool Xposed module enabled state
-persist.service.adb.enable|critical|ADB was persistently enabled — debug bridge exposure
-persist.service.debuggable|critical|Debug mode was persistently enabled
 persist.sys.developer_options|warning|Developer options were previously enabled
 persist.sys.xposed|critical|Xposed framework persistent state detected
 persist.sys.edxposed|critical|EdXposed framework persistent state detected

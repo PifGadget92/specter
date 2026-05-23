@@ -1,4 +1,4 @@
-import { exec } from './bridge.js';
+import { exec, getModuleDir } from './bridge.js';
 import { shellEscape, fetchJson } from './utils.js';
 import { showToast } from './toast.js';
 import { getTranslation } from './i18n.js';
@@ -555,6 +555,7 @@ export async function openTargetAppsManager() {
       appendToOutput(`[TARGET] Wrote ${lines.length} entries to target.txt`);
       showToast(t('ta_prompt_saved', 'Target list saved'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2500 });
       await exec('mkdir -p /data/adb/Specter && touch /data/adb/Specter/target_applied');
+      await exec(`sh ${shellEscape(getModuleDir() + '/refresh_desc.sh')}`);
     } catch (e) {
       appendToOutput(`[TARGET] Failed to save target list: ${e}`, true);
     }

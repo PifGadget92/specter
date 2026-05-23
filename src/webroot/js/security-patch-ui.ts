@@ -63,6 +63,8 @@ export function wireSecurityPatch() {
       const content = `system=prop\nboot=${val}\nvendor=${val}`;
       try {
         await exec(`cat > /data/adb/tricky_store/security_patch.txt << 'SEOF'\n${content}\nSEOF`);
+        const moddir = getModuleDir();
+        if (moddir) await exec(`sh ${moddir}/refresh_desc.sh`);
         showToast(t('sp_saved', 'Security patch date saved'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 2500 });
         dialog.close();
       } catch {

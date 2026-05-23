@@ -45,5 +45,6 @@ boot=$patch_date
 vendor=$patch_date
 EOF
 log "SECURITY_PATCH" "Patch date written to $SECURITY_PATCH_FILE"
+sh "$MODDIR/../refresh_desc.sh" >/dev/null 2>&1 || true
 log "SECURITY_PATCH" "Finish"
 exit 0

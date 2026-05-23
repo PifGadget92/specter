@@ -121,6 +121,7 @@
   "custom_kb_not_found": "غير موجود في الكتالوج",
   "custom_kb_not_found_desc": "تعذر مطابقة keybox مع أي مصدر معروف",
   "custom_kb_private_ask": "هل هذا keybox خاص؟",
+  "custom_kb_softbanned": "محظور مؤقتًا",
   "custom_kb_revoked": "ملغي",
   "custom_kb_title": "Keybox مخصص",
   "custom_kb_url": "رابط أو مسار",

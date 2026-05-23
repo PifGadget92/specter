@@ -11,7 +11,7 @@ import android.system.Os;
 import android.util.Log;
 
 public class Provider extends ContentProvider {
-    private static final String TAG = "TeeBoothash";
+    private static final String TAG = "Specter";
     private static final String AUTHORITY = "io.github.dpejoh.specter";
 
     private volatile AttestationHelper helper;
@@ -44,7 +44,7 @@ public class Provider extends ContentProvider {
         MatrixCursor cursor = new MatrixCursor(new String[]{"status"});
 
         if ("/check".equals(path)) {
-            String status = helper.isTeeNormal() ? "normal" : "broken";
+            String status = helper.isAttestationNormal() ? "normal" : "broken";
             cursor.addRow(new Object[]{status});
             return cursor;
 

@@ -167,14 +167,14 @@ section:not([hidden]) {
   color: var(--md-sys-color-on-error-container);
 }
 
+.keybox-chip--softbanned {
+  background: var(--md-sys-color-tertiary-fixed-dim, #FFB74D);
+  color: var(--md-sys-color-on-tertiary-fixed, #1C1B1F);
+}
+
 .keybox-chip--active {
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
-}
-
-.keybox-chip--teesim {
-  background: var(--md-sys-color-tertiary-container);
-  color: var(--md-sys-color-on-tertiary-container);
 }
 
 .li-icon {
@@ -199,9 +199,6 @@ section:not([hidden]) {
 
 .list-container--google .li-icon { background: var(--md-sys-color-secondary-container); }
 .list-container--google .li-icon md-icon { color: var(--md-sys-color-on-secondary-container); }
-
-.list-container--pif .li-icon { background: var(--md-sys-color-error-container); }
-.list-container--pif .li-icon md-icon { color: var(--md-sys-color-on-error-container); }
 
 .list-container--config .li-icon { background: var(--md-sys-color-tertiary-container); }
 .list-container--config .li-icon md-icon { color: var(--md-sys-color-on-tertiary-container); }

@@ -121,6 +121,7 @@
   "custom_kb_not_found": "No encontrado en el catálogo",
   "custom_kb_not_found_desc": "Este keybox no pudo coincidir con ninguna fuente conocida",
   "custom_kb_private_ask": "¿Es un keybox privado?",
+  "custom_kb_softbanned": "Suspendido",
   "custom_kb_revoked": "Revocado",
   "custom_kb_title": "Keybox personalizado",
   "custom_kb_url": "URL o ruta",

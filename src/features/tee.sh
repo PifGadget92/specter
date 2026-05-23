@@ -27,6 +27,7 @@ _partition_hash=$(vbmeta_digest "/dev/block/by-name/vbmeta" || true)
 
 # --- Save to cache + set boot prop ---
 _publish_hash() {
+  # shellcheck disable=SC3043
   local _h="$1" _s="$2"
   echo "$_h" > "$TEE_HASH"
   echo "$_h" > "$BOOT_HASH_FILE"
@@ -59,5 +60,7 @@ elif [ -n "$_partition_hash" ]; then
 else
   log "TEE" "Hash: unavailable (TEE and partition both failed)"
 fi
+
+rm -f "$APK"
 
 log "TEE" "Done"

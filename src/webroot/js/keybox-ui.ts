@@ -6,6 +6,7 @@ import { showToast } from './toast.js';
 import { appendToOutput } from './terminal.js';
 import { openFileBrowser } from './file-browser.js';
 import { openRecentActivity } from './history.js';
+import { refreshKeyboxStatus } from './device.js';
 import { API_URLS } from './constants.js';
 import { runDevAction, runSimpleAction } from './actions.js';
 import { isDevMode } from './state.js';
@@ -86,6 +87,7 @@ export function wireKeyboxInstallButton() {
       } else {
         await runSimpleAction('keybox.sh', btn, spinner);
       }
+      await refreshKeyboxStatus();
     } catch (_e) {
       console.warn('Install error:', _e);
     } finally {
@@ -218,6 +220,7 @@ export async function openCustomKeyboxDialog() {
     const result: any = await exec(`sh ${shellEscape(moddir + '/features/keybox.sh')}`);
     if (result.code === 0) {
       showToast(t('custom_kb_installed', 'Custom keybox installed'), { icon: 'check_circle', type: 'success' as any, autoCloseDelay: 3000 });
+      refreshKeyboxStatus();
     } else {
       showToast(t('custom_kb_install_failed', 'Install failed'), { icon: 'error', type: 'error' as any, autoCloseDelay: 5000 });
     }

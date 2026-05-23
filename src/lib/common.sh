@@ -146,8 +146,6 @@ sp_persist() {
 }
 
 hide_recovery_folders() {
-    [ -f "$SPECTER_DIR/twrp" ] && return 0
-
     _hrf_backup="/data/adb/recovery_backups"
     _hrf_random="" _hrf_subdirs=0 _hrf_path=""
 
@@ -191,21 +189,13 @@ apply_prop_hardening() {
     check_prop "ro.boot.realmebootstate" "green"
     check_prop "ro.boot.veritymode.managed" "yes"
     check_prop "ro.secureboot.lockstate" "locked"
-    check_prop "ro.debuggable" "0"
-    check_prop "ro.force.debuggable" "0"
     check_prop "ro.secure" "1"
-    check_prop "ro.adb.secure" "1"
     check_prop "ro.build.type" "user"
     check_prop "ro.build.tags" "release-keys"
     check_prop "ro.system.build.tags" "release-keys"
     check_prop "ro.vendor.build.tags" "release-keys"
     check_prop "sys.oem_unlock_allowed" "0"
     check_prop "ro.oem_unlock_supported" "0"
-    check_prop "sys.usb.config" "mtp"
-    check_prop "sys.usb.state" "mtp"
-    check_prop "sys.usb.adb.disabled" "1"
-    check_prop "persist.sys.usb.config" "mtp"
-    check_prop "service.adb.root" "0"
     check_prop "ro.kernel.qemu" "0"
     check_prop "ro.boot.qemu" "0"
     check_prop "ro.hardware.virtual_device" "0"
@@ -236,12 +226,7 @@ PROPS
 }
 
 apply_boot_hardening() {
-  settings put global adb_enabled 0
   settings put global oem_unlock_allowed 0
-  settings put global adb_wifi_enabled 0
-  settings put global adb_wifi_port -1
-  resetprop --delete persist.service.adb.enable 2>/dev/null || true
-  resetprop --delete persist.service.debuggable 2>/dev/null || true
 
   if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
     chmod 640 /sys/fs/selinux/enforce 2>/dev/null || true
@@ -280,9 +265,6 @@ MATCHES
   done << PROPS
 ro.build.selinux|1
 ro.secure|1
-ro.adb.secure|1
-ro.debuggable|0
-ro.force.debuggable|0
 ro.crypto.state|encrypted
 ro.hardware.virtual_device|0
 ro.build.type|user
@@ -295,10 +277,6 @@ ro.is_ever_orange|0
 ro.secureboot.lockstate|locked
 sys.oem_unlock_allowed|0
 ro.oem_unlock_supported|0
-sys.usb.config|mtp
-sys.usb.adb.disabled|1
-persist.sys.usb.config|none
-service.adb.root|0
 ro.boot.vbmeta.device_state|locked
 ro.boot.verifiedbootstate|green
 ro.boot.flash.locked|1
@@ -411,7 +389,7 @@ _parse_serial() {
 }
 
 decode_keybox_serial() {
-  _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' "$1" | head -20 | grep -v 'CERTIFICATE' | tr -d '\n')
+  _b64=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p; /-----END CERTIFICATE-----/q' "$1" | grep -v 'CERTIFICATE' | sed 's/^[[:space:]]*//' | tr -d '\n')
   [ -z "$_b64" ] && return 1
   _hex=$(echo "$_b64" | base64 -d 2>/dev/null | od -v -tx1 | awk 'BEGIN{ORS=""} {for(i=2;i<=NF;i++) printf "%s", $i}')
   [ -z "$_hex" ] && return 1
@@ -617,8 +595,6 @@ resolve_conflicts() {
 $(_conflict_registry)
 EOF
   unset _rc_id _rc_name _rc_scripts _rc_features _rc_type
-
-  apply_conflict_toggles
 }
 
 # Check if ANY installed conflicting module claims a feature
@@ -649,28 +625,6 @@ $(_conflict_registry)
 EOF
   unset _cc_id _cc_name _cc_scripts _cc_features _cc_type
   return $_cc_claimed
-}
-
-# Recalculate all Specter toggles based on current conflict priorities
-# Called by WebUI after changing a single module's priority
-apply_conflict_toggles() {
-  # Boot-time toggles
-  for _ac_feature in boot_hardening prop_handler suspicious_props lsposed recovery; do
-    if _conflict_claimed "$_ac_feature"; then
-      cfg_set "toggle_$_ac_feature" 0
-    else
-      cfg_set "toggle_$_ac_feature" 1
-    fi
-  done
-  # Action-pipeline toggles (only where action.sh gates)
-  for _ac_feature in target security_patch keybox gms pif; do
-    if _conflict_claimed "$_ac_feature"; then
-      cfg_set "toggle_action_$_ac_feature" 0
-    else
-      cfg_set "toggle_action_$_ac_feature" 1
-    fi
-  done
-  unset _ac_feature
 }
 
 conflict_status_json() {
@@ -712,7 +666,6 @@ conflict_set_choice() {
     if _conflict_detect "$_csc_id" && [ "$_csc_type" = "aggressive" ]; then
       _conflict_apply_scripts "$_csc_scripts" "$_csc_choice"
     fi
-    apply_conflict_toggles
     break
   done <<EOF
 $(_conflict_registry)

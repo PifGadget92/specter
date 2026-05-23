@@ -1,3 +1,5 @@
+#!/system/bin/sh
+# shellcheck shell=bash
 # Read big-endian integer (N bytes, default 8) from file at offset
 _val() {
   local _h

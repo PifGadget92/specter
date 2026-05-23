@@ -121,6 +121,7 @@
   "custom_kb_not_found": "在目录中未找到",
   "custom_kb_not_found_desc": "无法将此 keybox 匹配到任何已知来源",
   "custom_kb_private_ask": "这是私有 keybox 吗？",
+  "custom_kb_softbanned": "软封禁",
   "custom_kb_revoked": "已吊销",
   "custom_kb_title": "自定义 Keybox",
   "custom_kb_url": "URL 或路径",

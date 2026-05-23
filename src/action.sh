@@ -1,14 +1,15 @@
 #!/system/bin/sh
 # shellcheck shell=sh
-set -e
 MODDIR=${0%/*}
 
 # only BusyBox ash supports 'standalone' option
+# shellcheck disable=SC3040
 case "$(readlink /proc/$$/exe 2>/dev/null)" in
   *busybox) set +o standalone; unset ASH_STANDALONE ;;
 esac
 
 . "$MODDIR/lib/common.sh"
+. "$MODDIR/lib/paths.sh"
 . "$MODDIR/lib/config_env.sh"
 
 _action_feature_enabled() {
@@ -25,6 +26,10 @@ _action_feature_enabled toggle_action_keybox && sh "$MODDIR/features/keybox.sh" 
 _action_feature_enabled toggle_action_pif 0 && sh "$MODDIR/features/pif.sh" 2>/dev/null || true
 
 run_device_info "$MODDIR"
+
+# Refresh module description for manager apps
+[ -f "$MODDIR/module.prop.bak" ] && cp "$MODDIR/module.prop.bak" "$MODDIR/module.prop"
+. "$MODDIR/lib/boot_core.sh"
 
 log "ACTION" "Full integrity pipeline completed"
 

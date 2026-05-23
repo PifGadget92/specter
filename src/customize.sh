@@ -67,12 +67,6 @@ case "$_tee" in
 esac
 unset _tee
 
-if [ -f "$TEE_HASH" ]; then
-  _hash=$(cat "$TEE_HASH" 2>/dev/null)
-  [ -n "$_hash" ] && ui_print "- TEE hash: $_hash"
-  unset _hash
-fi
-
 if [ "$_ts_found" = true ]; then
   DECODE_FILE="$TRICKY_DIR/keybox_decode"
   TEMP_FILE="$MODPATH/keybox.tmp"
@@ -157,11 +151,23 @@ unset _tg_choice
 
 mkdir -p "$MODPATH/webroot/json"
 
+# Backup module.prop for description override system
+cp "$MODPATH/module.prop" "$MODPATH/module.prop.bak"
+
 # Mark TEE for first-boot check (removed by boot_core.sh after running)
 mkdir -p "$SPECTER_DIR"
 echo "1" > "$SPECTER_DIR/tee_reported"
 echo "1" > "$SPECTER_DIR/rom_spoof_reported"
 
 # Conflicts are resolved automatically at boot — no interactive prompts needed
+
+# Generate fresh keybox info for description
+if [ -d "/data/adb/modules/tricky_store" ] || [ -d "/data/adb/modules_update/tricky_store" ]; then
+  sh "$MODPATH/features/keybox_info.sh" >/dev/null 2>&1 || true
+fi
+
+# Refresh module description so manager shows dynamic status immediately
+. "$MODPATH/lib/desc.sh"
+refresh_module_description
 
 return 0

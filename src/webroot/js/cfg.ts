@@ -3,8 +3,6 @@ import { shellEscape } from './utils.js';
 
 let MODULE: string | null = null;
 const cache: Record<string, string | undefined | null> = {};
-let flushTimer: ReturnType<typeof setTimeout> | null = null;
-let pendingFlush: Array<{ key: string; val: string | undefined | null }> = [];
 
 export function setModuleDir(path: string) { MODULE = path; }
 
@@ -48,16 +46,7 @@ export async function cfgGet(key: string, defaultValue?: string): Promise<string
 
 export function cfgSet(key: string, val: string | undefined | null) {
   cache[key] = val;
-  pendingFlush.push({ key, val });
-  if (flushTimer) clearTimeout(flushTimer);
-  flushTimer = setTimeout(() => {
-    flushTimer = null;
-    const batch = pendingFlush;
-    pendingFlush = [];
-    for (const { key: k, val: v } of batch) {
-      writeConfig(k, v);
-    }
-  }, 500);
+  writeConfig(key, val);
 }
 
 export function cfgInvalidate(key?: string) {
@@ -69,16 +58,7 @@ export function cfgInvalidate(key?: string) {
 }
 
 export async function cfgFlush() {
-  if (flushTimer) clearTimeout(flushTimer);
-  flushTimer = null;
-  const batch = pendingFlush;
-  pendingFlush = [];
-  await Promise.all(batch.map(({ key, val }) => writeConfig(key, val)));
 }
-
-window.addEventListener('beforeunload', () => {
-  cfgFlush();
-});
 
 export async function migrateLocalStorage() {
   try {

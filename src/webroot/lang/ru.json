@@ -121,6 +121,7 @@
   "custom_kb_not_found": "Не найдено в каталоге",
   "custom_kb_not_found_desc": "Этот keybox не удалось сопоставить ни с одним известным источником",
   "custom_kb_private_ask": "Это приватный keybox?",
+  "custom_kb_softbanned": "Заблокирован",
   "custom_kb_revoked": "Отозван",
   "custom_kb_title": "Пользовательский Keybox",
   "custom_kb_url": "URL или путь",

@@ -37,6 +37,7 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
         cp "$_custom_value" "$TARGET_FILE" || die "Failed to copy custom keybox"
         log "KEYBOX" "Custom keybox installed from $_custom_value"
         _clear_custom
+        sh "$MODDIR/keybox_info.sh" >/dev/null 2>&1 || true
         exit 0
       fi
       log "KEYBOX" "Error: Custom keybox file not found: $_custom_value"
@@ -55,6 +56,7 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
         mv "$DECODE_FILE" "$TARGET_FILE" || die "Failed to move decoded keybox"
         log "KEYBOX" "Custom keybox installed from URL"
         _clear_custom
+        sh "$MODDIR/keybox_info.sh" >/dev/null 2>&1 || true
         exit 0
       fi
       log "KEYBOX" "Error: Custom keybox decode failed — not a valid base64 blob"
@@ -202,12 +204,17 @@ _clear_keybox_id() {
 if _is_teesimulator; then
     _install_teesimulator
     _clear_keybox_id
+    cp "$DECODE_FILE" "$TARGET_FILE" 2>/dev/null || true
+    sh "$MODDIR/keybox_info.sh" >/dev/null 2>&1 || true
+    sh "$MODDIR/../refresh_desc.sh" >/dev/null 2>&1 || true
     log "KEYBOX" "Finish"
     exit 0
 fi
 
 mv "$DECODE_FILE" "$TARGET_FILE" || die "Failed to move decoded keybox to $TARGET_FILE"
 _clear_keybox_id
+sh "$MODDIR/keybox_info.sh" >/dev/null 2>&1 || true
+sh "$MODDIR/../refresh_desc.sh" >/dev/null 2>&1 || true
 log "KEYBOX" "Keybox installed successfully"
 log "KEYBOX" "Finish"
 exit 0

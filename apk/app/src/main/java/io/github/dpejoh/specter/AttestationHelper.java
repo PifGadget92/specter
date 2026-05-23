@@ -17,8 +17,8 @@ import io.github.dpejoh.specter.attestation.Attestation;
 import io.github.dpejoh.specter.attestation.RootOfTrust;
 
 public class AttestationHelper {
-    private static final String TAG = "TeeBoothash";
-    private static final String ALIAS = "teeboothash_key";
+    private static final String TAG = "Specter";
+    private static final String ALIAS = "specter_key";
 
     private RootOfTrust rootOfTrust;
     private boolean attestationSuccess;
@@ -36,7 +36,7 @@ public class AttestationHelper {
                     ALIAS, KeyProperties.PURPOSE_SIGN)
                     .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
                     .setDigests(KeyProperties.DIGEST_SHA256)
-                    .setCertificateSubject(new X500Principal("CN=tee"))
+                    .setCertificateSubject(new X500Principal("CN=Specter"))
                     .setCertificateNotBefore(new Date())
                     .setAttestationChallenge(new Date().toString().getBytes())
                     .build();
@@ -67,7 +67,7 @@ public class AttestationHelper {
         }
     }
 
-    public boolean isTeeNormal() {
+    public boolean isAttestationNormal() {
         return attestationSuccess;
     }
 

@@ -83,15 +83,14 @@ _normalize_pkg() {
 
 _record_existing() {
   [ -f "$_TMP_EXIST" ] || : > "$_TMP_EXIST"
-  while IFS= read -r _line || [ -n "$_line" ]; do
-    _line=${_line%$'\r'}
+  tr -d '\r' < "$TARGET_TXT" | while IFS= read -r _line || [ -n "$_line" ]; do
     [ -z "$_line" ] && continue
     case "$_line" in
       \[*\]) continue ;;
     esac
     _base=$(_normalize_pkg "$_line")
     [ -n "$_base" ] && printf '%s\n' "$_base" >> "$_TMP_EXIST"
-  done < "$TARGET_TXT"
+  done
 }
 
 _append_missing() {
@@ -170,6 +169,7 @@ rm -f "${TARGET_TXT}.bak"
 [ -f "$TARGET_TXT" ] && cp "$TARGET_TXT" "${TARGET_TXT}.bak"
 mv -f "$_TMP_TARGET" "$TARGET_TXT"
 
-log "TARGET" "Checked $_count entries, added $_added" 
+log "TARGET" "Checked $_count entries, added $_added"
+sh "$MODDIR/../refresh_desc.sh" >/dev/null 2>&1 || true
 log "TARGET" "Finish (merge)"
 exit 0

@@ -41,6 +41,7 @@ export interface KeyboxInfoJson {
   text?: string;
   up_to_date?: boolean;
   revoked?: boolean;
+  softbanned?: boolean;
 }
 
 export interface DevEntry {
@@ -55,6 +56,7 @@ export interface CatalogEntry {
   version: string;
   text: string;
   revoked: boolean;
+  softbanned: boolean;
   serial: string;
   last_checked: string;
   timestamp: string;

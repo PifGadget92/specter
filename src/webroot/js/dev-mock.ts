@@ -175,6 +175,18 @@ if (typeof window.ksu === 'undefined') {
       }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
     }
 
+    if (u.includes('rawbin.netlify.app/key/catalog')) {
+      return Promise.resolve(new Response(JSON.stringify({
+        entries: [
+          { source: "droidwin", version: "1", text: "v1", serial: "12345", revoked: false, softbanned: false, last_checked: new Date().toISOString(), timestamp: new Date().toISOString() },
+          { source: "droidwin", version: "2", text: "v2", serial: "67890", revoked: false, softbanned: true, last_checked: new Date().toISOString(), timestamp: new Date().toISOString() },
+          { source: "yuri", version: "8", text: "v8", serial: "11111", revoked: true, softbanned: false, last_checked: new Date().toISOString(), timestamp: new Date().toISOString() },
+        ],
+        latest: { droidwin: "2", yuri: "8" },
+        working: { source: "droidwin", version: "1" },
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    }
+
     if (u.includes('rawbin.netlify.app/apps/version')) {
       return Promise.resolve(new Response(JSON.stringify({ version: 1 }), {
         status: 200, headers: { 'Content-Type': 'application/json' },

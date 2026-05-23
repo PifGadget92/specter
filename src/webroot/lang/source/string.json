@@ -122,6 +122,7 @@
   "custom_kb_detecting": "Detecting keybox...",
   "custom_kb_detected": "Keybox Detected",
   "custom_kb_known": "Known Keybox",
+  "custom_kb_softbanned": "Softbanned",
   "custom_kb_revoked": "Revoked",
   "custom_kb_active": "Active",
   "custom_kb_not_found": "Not Found in Catalog",
