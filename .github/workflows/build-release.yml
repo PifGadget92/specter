@@ -86,5 +86,5 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore: bump update.json to ${{ steps.version.outputs.version }} [skip ci]"
-            git push
+            git push origin HEAD:main
           fi
