@@ -1961,7 +1961,6 @@ md-filled-tonal-button {
 .kb-hero-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
@@ -1972,7 +1971,6 @@ md-filled-tonal-button {
   font-weight: 500;
   text-transform: uppercase;
   display: block;
-  margin-bottom: 6px;
 }
 
 .kb-hero-status-text {
@@ -1998,8 +1996,14 @@ md-filled-tonal-button {
 
 .kb-hero-status-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 4px;
+}
+
+.kb-hero-status-inner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 #kb-refresh-btn {
