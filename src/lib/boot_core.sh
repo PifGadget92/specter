@@ -12,19 +12,17 @@ log "BOOT" "Running unified boot core"
 
 # Boot props handled by service.sh at early boot (Magisk only, same as v1.3.2)
 
-# Protect SELinux policy files
-if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
-  chmod 640 /sys/fs/selinux/enforce 2>/dev/null || true
-  chmod 440 /sys/fs/selinux/policy 2>/dev/null || true
-fi
-
 # Boot-time features, single authoritative list, all dispatched as scripts
-for _bf in recovery boot_hardening suspicious_props lsposed security_patch; do
+for _bf in recovery boot_hardening lsposed security_patch adb_disabler rom_fingerprint; do
   case "$_bf" in *[!a-zA-Z0-9_-]*) log "BOOT" "Skipping invalid feature: $_bf"; continue ;; esac
-  _feature_should_run "$_bf" || continue
+  case "$_bf" in adb_disabler|rom_fingerprint) _feature_should_run "$_bf" 0 || continue ;; *) _feature_should_run "$_bf" || continue ;; esac
   sh "$MODDIR/features/$_bf.sh" >/dev/null 2>&1 || true
 done
 unset _bf
+
+# Boot state props + suspicious props clean (gated by toggle_prop_handler master)
+_feature_should_run "prop_handler" && sh "$MODDIR/features/boot_state_props.sh" >/dev/null 2>&1 || true
+
 log "BOOT" "Boot-time features done"
 
 # TEE: run only on first boot after install (marker set by customize.sh)
@@ -48,16 +46,15 @@ refresh_module_description
 (
   sleep 120
   log "BOOT" "Delayed spoofing, reapplying critical props"
-  apply_boot_props
-  _feature_should_run "recovery" && hide_recovery_folders
+  [ "$(cfg_get toggle_prop_handler 1)" != "0" ] && [ "$(cfg_get boot_state_props 1)" != "0" ] && apply_boot_props
 ) &
 
 # Periodic suspicious props cleaning, re-run every hour
-if [ "$(cfg_get toggle_suspicious_props 1)" != "0" ]; then
+if [ "$(cfg_get toggle_prop_handler 1)" != "0" ]; then
   (
     while true; do
       sleep 3600
-      sh "$MODDIR/features/suspicious_props.sh" >/dev/null 2>&1 || true
+      sh "$MODDIR/features/boot_state_props.sh" >/dev/null 2>&1 || true
     done
   ) &
 fi

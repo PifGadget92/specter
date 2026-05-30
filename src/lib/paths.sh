@@ -9,6 +9,7 @@ TARGET_TXT="$TRICKY_DIR/target.txt"
 SECURITY_PATCH_FILE="$TRICKY_DIR/security_patch.txt"
 TEE_STATUS="$SPECTER_DIR/tee_status"
 TEE_HASH="$SPECTER_DIR/tee_hash"
+VBMETA_DIGEST="$SPECTER_DIR/vbmeta_digest"
 
 # Other system paths
 SPECTER_DIR="/data/adb/Specter"

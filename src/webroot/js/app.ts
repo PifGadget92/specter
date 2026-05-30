@@ -64,6 +64,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }).catch(() => {});
   import('./target-apps.js').then(m => m.wireTargetApps()).catch(() => {});
   import('./auto-target-ui.js').then(m => m.wireAutoTarget()).catch(() => {});
+  import('./rom-fingerprint-ui.js').then(m => m.wireRomFingerprint()).catch(() => {});
+  import('./adb-disabler-ui.js').then(m => {
+    m.wireAdbDisabler();
+  }).catch(() => {});
+  import('./boot-harden-ui.js').then(m => m.wireBootHarden()).catch(() => {});
+  import('./prop-handler-ui.js').then(m => m.wirePropHandler()).catch(() => {});
+  import('./gms-ui.js').then(m => m.wireGms()).catch(() => {});
   import('./security-patch-ui.js').then(m => m.wireSecurityPatch()).catch(() => {});
 
   const savedDevMode = await cfgGet('dev_mode', 'false') || 'false';

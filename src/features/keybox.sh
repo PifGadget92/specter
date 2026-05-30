@@ -68,7 +68,7 @@ fi
 _provider=$(cat "$CONFIG_DIR/kb_provider.val" 2>/dev/null || echo "auto")
 
 log "KEYBOX" "Fetching available keyboxes..."
-_history=$(download "$CATALOG_URL" 2>/dev/null)
+_history=$(download "$CATALOG_URL")
 
 if [ -z "$_history" ]; then
   log "KEYBOX" "Catalog fetch failed, trying fallback keyboxes..."

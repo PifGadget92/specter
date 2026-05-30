@@ -6,19 +6,14 @@ MODDIR=${0%/*}
 . "$MODDIR/lib/paths.sh"
 . "$MODDIR/lib/config_env.sh"
 detect_root_solution
+export ROOT_SOL
 
 log "SERVICE" "Setting early boot properties"
 
 # Early boot props (immediate, no wait, re-applied by boot_core.sh after boot completed)
 if [ "$(cfg_get toggle_prop_handler 1)" != "0" ]; then
-  apply_boot_props
-  spoof_build_props
-fi
-
-# Protect SELinux policy files
-if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
-  chmod 640 /sys/fs/selinux/enforce 2>/dev/null || true
-  chmod 440 /sys/fs/selinux/policy 2>/dev/null || true
+  [ "$(cfg_get boot_state_props 1)" != "0" ] && apply_boot_props
+  [ "$(cfg_get spoof_build_props 1)" != "0" ] && spoof_build_props
 fi
 
 log "SERVICE" "Early boot properties set"

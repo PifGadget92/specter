@@ -1,5 +1,5 @@
 # shellcheck shell=sh
-ROOT_SOL=""
+ROOT_SOL="${ROOT_SOL:-}"
 
 log() { echo "[$1] $2"; }
 
@@ -41,8 +41,9 @@ download() {
     fi
 
     PATH="$_dl_oldpath"
+    _dl_rc=$_dl_code
     unset _dl_url _dl_output _dl_sha256 _dl_oldpath _dl_tmp _dl_code _dl_try _dl_sum _dl_ua
-    return "$_dl_code"
+    return $_dl_rc
 }
 
 check_network() {
@@ -63,13 +64,6 @@ check_network() {
     PATH="$_cn_oldpath"
     unset _cn_oldpath
     return 1
-}
-
-check_prop() {
-    _cp_name=$1 _cp_expected=$2
-    _cp_value=$(resetprop "$_cp_name" 2>/dev/null || echo "")
-    [ -z "$_cp_value" ] || [ "$_cp_value" = "$_cp_expected" ] || resetprop -n "$_cp_name" "$_cp_expected" 2>/dev/null || true
-    unset _cp_name _cp_expected _cp_value
 }
 
 detect_root_solution() {
@@ -172,53 +166,6 @@ hide_recovery_folders() {
     unset _hrf_backup _hrf_random _hrf_subdirs _hrf_path _hrf_path_recurse _hrf_folder
 }
 
-apply_prop_hardening() {
-    check_prop "ro.boot.vbmeta.device_state" "locked"
-    check_prop "vendor.boot.vbmeta.device_state" "locked"
-    check_prop "ro.boot.verifiedbootstate" "green"
-    check_prop "vendor.boot.verifiedbootstate" "green"
-    check_prop "ro.boot.flash.locked" "1"
-    check_prop "ro.boot.veritymode" "enforcing"
-    check_prop "ro.boot.warranty_bit" "0"
-    check_prop "ro.warranty_bit" "0"
-    check_prop "ro.boot.realme.lockstate" "1"
-    check_prop "ro.boot.realmebootstate" "green"
-    check_prop "ro.boot.veritymode.managed" "yes"
-    check_prop "ro.secureboot.lockstate" "locked"
-    check_prop "ro.secure" "1"
-    check_prop "ro.build.type" "user"
-    check_prop "ro.build.tags" "release-keys"
-    check_prop "ro.system.build.tags" "release-keys"
-    check_prop "ro.vendor.build.tags" "release-keys"
-    check_prop "ro.kernel.qemu" "0"
-    check_prop "ro.boot.qemu" "0"
-    check_prop "ro.hardware.virtual_device" "0"
-    check_prop "ro.boot.selinux" "enforcing"
-    check_prop "ro.crypto.state" "encrypted"
-    sp_try "ro.boot.warranty_bit" "0"
-    sp_try "ro.vendor.boot.warranty_bit" "0"
-    sp_try "ro.vendor.warranty_bit" "0"
-    sp_try "ro.warranty_bit" "0"
-    sp_try "ro.is_ever_orange" "0"
-
-    while IFS= read -r _aph_prop; do
-        [ -z "$_aph_prop" ] && continue
-        sp_try "$_aph_prop" "user"
-    done <<PROPS
-$(resetprop 2>/dev/null | grep -oE 'ro.*\.build\.type' | grep -v 'ro.build.type' || true)
-PROPS
-
-    while IFS= read -r _aph_prop; do
-        [ -z "$_aph_prop" ] && continue
-        sp_try "$_aph_prop" "release-keys"
-    done <<PROPS
-$(resetprop 2>/dev/null | grep -oE 'ro.*\.build\.tags' | grep -v 'ro.build.tags' || true)
-PROPS
-
-    [ "$(getprop ro.boot.selinux 2>/dev/null)" = "enforcing" ] && check_prop "ro.build.selinux" "1"
-    return 0
-}
-
 apply_boot_hardening() {
   if [ "$(toybox cat /sys/fs/selinux/enforce 2>/dev/null)" = "0" ]; then
     chmod 640 /sys/fs/selinux/enforce 2>/dev/null || true
@@ -230,6 +177,15 @@ ensure_dir() { mkdir -p "$1" 2>/dev/null; }
 
 # Data-driven boot prop application, single source of truth
 apply_boot_props() {
+  if [ -f "$VBMETA_DIGEST" ]; then
+    resetprop -n ro.boot.vbmeta.digest "$(cat "$VBMETA_DIGEST")"
+  fi
+  # Only set vbmeta props if system hasn't already defined them
+  # (direct resetprop -n, not sp_try, because sp_try skips missing props)
+  resetprop ro.boot.vbmeta.avb_version >/dev/null 2>&1 || resetprop -n ro.boot.vbmeta.avb_version "1.2"
+  resetprop ro.boot.vbmeta.hash_alg >/dev/null 2>&1 || resetprop -n ro.boot.vbmeta.hash_alg "sha256"
+  resetprop ro.boot.vbmeta.invalidate_on_error >/dev/null 2>&1 || resetprop -n ro.boot.vbmeta.invalidate_on_error "yes"
+  resetprop ro.boot.vbmeta.size >/dev/null 2>&1 || resetprop -n ro.boot.vbmeta.size "4096"
   # 2-arg props: sp_try <prop> <value>
   while IFS='|' read -r _abp_prop _abp_val; do
     [ -z "$_abp_prop" ] && continue
@@ -276,6 +232,12 @@ vendor.boot.vbmeta.device_state|locked
 ro.vendor.boot.warranty_bit|0
 ro.boot.realmebootstate|green
 ro.boot.realme.lockstate|1
+ro.boot.veritymode.managed|yes
+ro.system.build.tags|release-keys
+ro.vendor.build.tags|release-keys
+ro.kernel.qemu|0
+ro.boot.qemu|0
+ro.boot.selinux|enforcing
 PROPS
 }
 
@@ -417,22 +379,14 @@ find_kmInstallKeybox() {
 
 block_rom_spoof_engines() {
   _brs_gate=false
-  resetprop 2>/dev/null | grep -qE 'persist\.sys\.(pihooks|entryhooks|pixelprops)' && _brs_gate=true
+  resetprop 2>/dev/null | grep -qE 'persist\.sys\.(entryhooks|pixelprops)' && _brs_gate=true
   [ -f "$GMS_PROPS_FILE" ] && _brs_gate=true
   [ "$_brs_gate" = "false" ] && unset _brs_gate && return 0
-
-  # Init missing persist props only (don't overwrite existing)
-  for _brs_hook in persist.sys.pihooks.first_api_level persist.sys.pihooks.security_patch; do
-    resetprop 2>/dev/null | grep -q "$_brs_hook" || sp_persist "$_brs_hook" ""
-  done
-  unset _brs_hook
 
   # Data-driven map for unconditional spoof engine blocks
   while IFS='|' read -r _brs_prop _brs_val; do
     sp_persist "$_brs_prop" "$_brs_val"
   done << MAP
-persist.sys.pihooks.disable.gms_props|true
-persist.sys.pihooks.disable.gms_key_attestation_block|true
 persist.sys.entryhooks_enabled|false
 persist.sys.pixelprops.gms|false
 persist.sys.pixelprops.gapps|false
@@ -448,7 +402,7 @@ MAP
     [ -z "$_brs_prop" ] && continue
     resetprop -p --delete "$_brs_prop" 2>/dev/null || true
   done << BRS_PROPS
-$(getprop 2>/dev/null | grep -E "pihook|pixelprops" | sed "s/^\[\(.*\)\]:.*/\1/" || true)
+$(getprop 2>/dev/null | grep -E "pixelprops" | sed "s/^\[\(.*\)\]:.*/\1/" || true)
 BRS_PROPS
 
   unset _brs_gate _brs_prop _brs_val
@@ -545,12 +499,10 @@ EOF
   unset _mc_old_dir _mc_id _mc_name _mc_scripts _mc_features _mc_type _mc_old_file _mc_current _mc_old_val
 }
 
-_feature_enabled() { [ "$(cfg_get "$1" "${2:-1}")" != "0" ]; }
-
 # Single toggle+conflict check used by boot_core.sh dispatcher
 _feature_should_run() {
-  _fsr_feature="$1"
-  [ "$(cfg_get "toggle_$_fsr_feature" 1)" != "0" ] || return 1
+  _fsr_feature="$1" _fsr_default="${2:-1}"
+  [ "$(cfg_get "toggle_$_fsr_feature" "$_fsr_default")" != "0" ] || return 1
   _conflict_claimed "$_fsr_feature" && return 1
   return 0
 }

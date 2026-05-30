@@ -19,11 +19,11 @@ _action_feature_enabled() {
 
 log "ACTION" "Running full integrity pipeline"
 
-_action_feature_enabled toggle_action_gms && sh "$MODDIR/features/kill_play_store.sh" 2>/dev/null || true
-_action_feature_enabled toggle_action_target && sh "$MODDIR/features/target_merge.sh" 2>/dev/null || true
-_action_feature_enabled toggle_action_security_patch && sh "$MODDIR/features/security_patch.sh" 2>/dev/null || true
-_action_feature_enabled toggle_action_keybox && sh "$MODDIR/features/keybox.sh" 2>/dev/null || true
-_action_feature_enabled toggle_action_pif 0 && sh "$MODDIR/features/pif.sh" 2>/dev/null || true
+_action_feature_enabled toggle_action_gms && sh "$MODDIR/features/kill_play_store.sh"
+_action_feature_enabled toggle_action_target && sh "$MODDIR/features/target_merge.sh"
+_action_feature_enabled toggle_action_security_patch && sh "$MODDIR/features/security_patch.sh"
+_action_feature_enabled toggle_action_keybox && sh "$MODDIR/features/keybox.sh"
+_action_feature_enabled toggle_action_pif && sh "$MODDIR/features/pif.sh"
 
 run_device_info "$MODDIR"
 sh "$MODDIR/features/keybox_info.sh" >/dev/null 2>&1 || true

@@ -34,9 +34,7 @@ _publish_hash() {
   # shellcheck disable=SC3043
   local _h="$1" _s="$2"
   echo "$_h" > "$TEE_HASH"
-  echo "$_h" > "$BOOT_HASH_FILE"
-  chmod 644 "$BOOT_HASH_FILE" 2>/dev/null || true
-  resetprop -n ro.boot.vbmeta.digest "$_h" 2>/dev/null || true
+  echo "$_h" > "$VBMETA_DIGEST"
   log "TEE" "Hash: $_h ($_s)"
 }
 
