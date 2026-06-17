@@ -52,12 +52,11 @@ async function updateNetworkStatus() {
 }
 
 async function checkOnline(): Promise<boolean> {
-  if (!navigator.onLine) return false;
   for (const endpoint of ONLINE_ENDPOINTS) {
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 800);
-      await fetch(endpoint, { signal: ctrl.signal });
+      const timer = setTimeout(() => ctrl.abort(), 1500);
+      await fetch(endpoint, { signal: ctrl.signal, mode: 'no-cors' });
       clearTimeout(timer);
       return true;
     } catch { /* try next endpoint */ }
