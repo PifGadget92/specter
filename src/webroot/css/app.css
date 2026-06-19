@@ -2422,6 +2422,8 @@ md-filled-tonal-button {
   width: 40px;
   height: 40px;
   margin-right: 12px;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .sp-icn {
@@ -2429,6 +2431,7 @@ md-filled-tonal-button {
   opacity: 0;
   transition: opacity 0.3s ease;
   display: block;
+  border-radius: 50%;
 }
 
 [dir="rtl"] .sp-icn-w {

@@ -8,8 +8,18 @@ const t = (key: string, fallback: string): string => getTranslation(key) || fall
 export function wireSecurityPatch() {
   const btn = document.getElementById('security-patch-btn');
   if (!btn) return;
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     const defaultDate = defaultSecurityPatch();
+
+    const { stdout: currentRaw } = await exec(`cat ${TRICKY_DIR}/security_patch.txt 2>/dev/null || echo ""`);
+    let current = '';
+    for (const line of currentRaw.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('all=')) {
+        current = trimmed.slice(4).trim();
+        break;
+      }
+    }
 
     const dialog = document.createElement('md-dialog');
     dialog.innerHTML = `
@@ -29,7 +39,7 @@ export function wireSecurityPatch() {
     document.body.appendChild(dialog);
 
     const input = dialog.querySelector('#sp-input') as MdOutlinedTextField | null;
-    if (input) input.value = defaultDate;
+    if (input) input.value = current || defaultDate;
 
     dialog.querySelector('#sp-fetch')!.addEventListener('click', async () => {
       const moddir = getModuleDir();
