@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }).catch(() => {});
   import('./target-apps.js').then(m => m.wireTargetApps()).catch(() => {});
   import('./auto-target-ui.js').then(m => m.wireAutoTarget()).catch(() => {});
+  import('./autopif-ui.js').then(m => m.wireAutopif()).catch(() => {});
   import('./rom-fingerprint-ui.js').then(m => m.wireRomFingerprint()).catch(() => {});
   import('./adb-disabler-ui.js').then(m => {
     m.wireAdbDisabler();
@@ -82,6 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (sw) sw.selected = savedDevMode === 'true';
 
   document.addEventListener('languageChanged', () => {
+    loadContributors().catch(() => {});
     const active = document.querySelector('.nav-tab--active') as HTMLElement | null;
     const indicator = document.getElementById('nav-indicator') as HTMLElement | null;
     if (active && indicator) {
@@ -91,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   /* Phase 3: Load text + data */
-  initI18n().catch(() => {});
+  initI18n().then(() => loadContributors()).catch(() => {});
   initDevice().catch(() => {});
   renderActivityPreview();
   onHomeShow(() => {
@@ -104,7 +106,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* Phase 4: Background tasks */
   initNetwork();
   import('./keybox-ui.js').then(m => m.populateProviders()).catch(() => {});
-  loadContributors().catch(() => {});
   import('./font.js').then(m => m.initFonts()).catch(() => {});
 
   /* Phase 5: Lazy per-tab data */

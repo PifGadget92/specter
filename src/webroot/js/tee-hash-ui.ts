@@ -1,4 +1,4 @@
-import { exec, spawnScript, getModuleDir } from './bridge.js';
+import { exec, spawnScript } from './bridge.js';
 import { getTranslation } from './i18n.js';
 import { showToast } from './toast.js';
 import { addEntry } from './history.js';
@@ -9,11 +9,6 @@ const t = (key: string, fallback: string): string => getTranslation(key) || fall
 
 function getSpDir(): string {
   return '/data/adb/specter';
-}
-
-function cacheDir(): string {
-  const mod = getModuleDir();
-  return mod || '/data/adb/modules/specter';
 }
 
 export function wireTeeHash() {

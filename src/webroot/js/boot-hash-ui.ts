@@ -26,7 +26,16 @@ export function wireBootHash() {
     dialog.innerHTML = `
       <div slot="headline">${t('boot_hash_dialog_title', 'Custom Boot Hash')}</div>
       <div slot="content" style="min-height:0">
-        <md-outlined-text-field id="boot-hash-input" type="text" label="${t('boot_hash_label', 'Boot Hash (SHA256)')}" placeholder="64 hex characters" maxlength="64" autocapitalize="none" style="width:100%;--md-outlined-text-field-container-shape:14px;font-family:monospace"></md-outlined-text-field>
+        <md-outlined-text-field id="boot-hash-input" type="text" label="${t('boot_hash_label', 'Boot Hash (SHA256)')}" placeholder="${t('boot_hash_placeholder', '64 hex characters')}" maxlength="64" autocapitalize="none" style="width:100%;margin-top:8px;--md-outlined-text-field-container-shape:14px;font-family:monospace;--md-outlined-field-with-trailing-content-trailing-space:24px;overflow:hidden">
+          <div slot="trailing-icon" style="display:flex;align-items:center;gap:2px">
+            <md-icon-button id="boot-hash-paste" style="--md-icon-button-icon-size:18px;width:32px;height:32px" aria-label="${t('kb_paste_aria', 'Paste from clipboard')}">
+              <md-icon>content_paste</md-icon>
+            </md-icon-button>
+            <md-icon-button id="boot-hash-zero" style="--md-icon-button-icon-size:18px;width:32px;height:32px" aria-label="${t('boot_hash_zero_aria', 'Set hash to zeros')}">
+              <md-icon>restart_alt</md-icon>
+            </md-icon-button>
+          </div>
+        </md-outlined-text-field>
         <p class="md-typescale-body-small" style="margin:12px 0 4px;opacity:.7">
           ${t('boot_hash_info', 'Leave empty to use auto-computed boot hash. The hash is a 64-character hex string.')}
         </p>
@@ -41,6 +50,19 @@ export function wireBootHash() {
 
     const input = dialog.querySelector('#boot-hash-input') as HTMLInputElement | null;
     if (input && currentHash) input.value = currentHash;
+
+    const pasteBtn = dialog.querySelector('#boot-hash-paste') as HTMLElement | null;
+    pasteBtn?.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && input) input.value = text;
+      } catch { /* clipboard not available */ }
+    });
+
+    const zeroBtn = dialog.querySelector('#boot-hash-zero') as HTMLElement | null;
+    zeroBtn?.addEventListener('click', () => {
+      if (input) input.value = '0'.repeat(64);
+    });
 
     dialog.querySelector('#boot-hash-cancel')!.addEventListener('click', () => dialog.close());
     dialog.querySelector('#boot-hash-clear')!.addEventListener('click', async () => {

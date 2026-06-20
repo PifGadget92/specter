@@ -2562,3 +2562,59 @@ md-filled-tonal-button {
   height: 28px;
   margin-right: 4px;
 }
+
+/* ===== Auto PIF Dialog ===== */
+
+#autopif-dialog [slot="headline"] {
+  padding: 0;
+}
+
+#autopif-dialog [slot="content"] {
+  padding: 8px 24px 16px;
+}
+
+.ap-dialog-headline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.ap-dialog-headline md-icon {
+  font-size: 24px;
+  color: var(--md-sys-color-primary);
+}
+
+.ap-dialog-desc {
+  margin: 0 0 16px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ap-interval-input {
+  width: 60px;
+  text-align: center;
+  padding: 18px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-ref-typeface-plain);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+  -moz-appearance: textfield;
+}
+
+.ap-interval-input:focus {
+  border-color: var(--md-sys-color-primary);
+}
+
+.ap-interval-input::-webkit-outer-spin-button,
+.ap-interval-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

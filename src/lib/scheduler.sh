@@ -51,7 +51,8 @@ while true; do
   _now=$(date +%s 2>/dev/null || echo "0")
 
   for _task_line in keybox_info:keybox_info.sh:21600:toggle_keybox_info \
-                    auto_target:auto_target.sh:300:toggle_auto_target; do
+                    auto_target:auto_target.sh:300:toggle_auto_target \
+                    autopif:pif.sh:86400:toggle_autopif; do
     _name="${_task_line%%:*}"
     _rest="${_task_line#*:}"
     _script="${_rest%%:*}"
@@ -72,7 +73,7 @@ while true; do
       printf '%s' "$_now" > "$TASKS_DIR/${_name}_last"
 
       case "$_name" in
-        keybox_info|auto_target)
+        keybox_info|auto_target|autopif)
           refresh_module_description
           ;;
       esac

@@ -36,6 +36,7 @@ export const CONTROL_TOGGLES: ToggleDef[] = [
   { id: 'toggle-action_keybox', key: 'toggle_action_keybox', icon: 'vpn_key', section: 'action' },
   { id: 'toggle-background_auto_target', key: 'toggle_auto_target', icon: 'my_location', section: 'background' },
   { id: 'toggle-background_keybox_info', key: 'toggle_keybox_info', icon: 'refresh', section: 'background' },
+  { id: 'toggle-background_autopif', key: 'toggle_autopif', icon: 'fingerprint', section: 'background' },
 ];
 
 export const TRICKY_DIR = '/data/adb/tricky_store';

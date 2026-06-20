@@ -23,11 +23,24 @@ log_rotate "$ACTION_LOG"
   if [ "$(cfg_get toggle_action_pif 1)" != "0" ]; then
     _pif_name=$(_pif_prop) || _pif_name=""
     if [ -z "$_pif_name" ]; then
-      log "ACTION" "PIF not found, installing KOWX712/PlayIntegrityFix..."
-      install_module_from_github "KOWX712/PlayIntegrityFix" "Play Integrity Fix" || \
-        log "ACTION" "PIF auto-install failed"
-      log "ACTION" "PIF installed — reboot required before running autopif"
-      _pif_installed=1
+      if [ -f "$SPECTER_DIR/pif_reported" ]; then
+        log "ACTION" "PIF not found — first boot suppress (pif_reported token consumed)"
+        rm -f "$SPECTER_DIR/pif_reported"
+      elif [ -t 1 ]; then
+        log "ACTION" "PIF not found. Press Volume UP to install, Volume DOWN to skip..."
+        _ap_key=$(timeout 10 getevent -l 2>/dev/null | grep -oE "KEY_VOLUME(UP|DOWN)" | head -1)
+        if [ "$_ap_key" = "KEY_VOLUMEUP" ]; then
+          install_module_from_github "KOWX712/PlayIntegrityFix" "Play Integrity Fix" || \
+            log "ACTION" "PIF install failed"
+          log "ACTION" "PIF installed — reboot required before running autopif"
+          _pif_installed=1
+        else
+          log "ACTION" "PIF install skipped by user"
+        fi
+        unset _ap_key
+      else
+        log "ACTION" "PIF not found — auto-install skipped (run from terminal or install manually)"
+      fi
     fi
     unset _pif_name
     if [ -z "$_pif_installed" ] && [ -f "$MODDIR/features/pif.sh" ]; then

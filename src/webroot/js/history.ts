@@ -244,98 +244,98 @@ export function renderActivityPreview() {
 
   const DESCRIPTION_EXTRACTORS: Record<string, (o: string, c: number) => string | null> = {
     'keybox.sh': (o, c) => {
-      if (c !== 0) return extractError(o) || 'Keybox install failed';
+      if (c !== 0) return extractError(o) || t('history_desc_keybox_install_failed', 'Keybox install failed');
       const src = extractValue(o, /(?:Auto-selected|Selected provider|Fallback selected)[:\s]+(.+)$/im);
-      if (src) return `Keybox: ${src}`;
-      if (o.includes('Custom keybox installed from')) return 'Keybox: custom file';
-      if (o.includes('Custom keybox installed from URL')) return 'Keybox: custom URL';
-      return 'Keybox installed';
+      if (src) return t('history_desc_keybox', 'Keybox: {src}').replace('{src}', src);
+      if (o.includes('Custom keybox installed from')) return t('history_desc_keybox_custom_file', 'Keybox: custom file');
+      if (o.includes('Custom keybox installed from URL')) return t('history_desc_keybox_custom_url', 'Keybox: custom URL');
+      return t('history_desc_keybox_installed', 'Keybox installed');
     },
     'gms.sh': (o) => {
       const count = extractValue(o, /Force-stopped (\d+) packages/i);
       const cleared = o.includes('Play Store data cleared');
-      if (count && cleared) return `Stop ${count} + Play Store cleared`;
-      if (count) return `Stop ${count} packages`;
-      if (cleared) return 'Play Store cleared';
-      return 'GMS action done';
+      if (count && cleared) return t('history_desc_gms_stop_cleared', 'Stop {count} + Play Store cleared').replace('{count}', count);
+      if (count) return t('history_desc_gms_stop', 'Stop {count} packages').replace('{count}', count);
+      if (cleared) return t('history_desc_gms_cleared', 'Play Store cleared');
+      return t('history_desc_gms_done', 'GMS action done');
     },
     'target.sh': (o, c) => {
-      if (c !== 0) return extractError(o) || 'Target update failed';
+      if (c !== 0) return extractError(o) || t('history_desc_target_update_failed', 'Target update failed');
       if (o.includes('Denylist merge')) {
         const a = extractValue(o, /added (\d+)/);
-        return a ? `Denylist +${a}` : 'Denylist merged';
+        return a ? t('history_desc_denylist_merge', 'Denylist +{count}').replace('{count}', a) : t('history_desc_denylist_merged', 'Denylist merged');
       }
       if (o.includes('Mode: merge')) {
         const a = extractValue(o, /added (\d+)/);
-        return a ? `Merge +${a}` : 'Targets merged';
+        return a ? t('history_desc_merge', 'Merge +{count}').replace('{count}', a) : t('history_desc_targets_merged', 'Targets merged');
       }
       const w = extractValue(o, /Wrote (\d+) entries/);
-      return w ? `Wrote ${w} targets` : 'Target updated';
+      return w ? t('history_desc_wrote_targets', 'Wrote {count} targets').replace('{count}', w) : t('history_desc_target_updated', 'Target updated');
     },
     'pif.sh': (o, c) => {
-      if (c !== 0) return extractError(o) || 'PIF update failed';
+      if (c !== 0) return extractError(o) || t('history_desc_pif_update_failed', 'PIF update failed');
       const model = extractValue(o, /MODEL=(\S+)/);
-      if (model) return `PIF: ${model}`;
+      if (model) return t('history_desc_pif', 'PIF: {model}').replace('{model}', model);
       const name = extractValue(o, /Detected:\s*(.+)$/im);
-      return name ? `PIF updated (${name})` : 'PIF updated';
+      return name ? t('history_desc_pif_updated_name', 'PIF updated ({name})').replace('{name}', name) : t('history_desc_pif_updated', 'PIF updated');
     },
     'rom_spoof_cleanup.sh': (o) => {
-      if (o.includes('No spoof engines found')) return 'No spoof engines';
-      if (o.includes('Spoof engines detected')) return 'Spoof engines cleaned';
-      return 'Spoof check done';
+      if (o.includes('No spoof engines found')) return t('history_desc_no_spoof_engines', 'No spoof engines');
+      if (o.includes('Spoof engines detected')) return t('history_desc_spoof_engines_cleaned', 'Spoof engines cleaned');
+      return t('history_desc_spoof_check_done', 'Spoof check done');
     },
     'hma.sh': (o) => {
-      if (o.includes('No HMA variant installed')) return 'No HMA found';
+      if (o.includes('No HMA variant installed')) return t('history_desc_no_hma', 'No HMA found');
       if (o.includes('Config installed')) {
         const v = extractValue(o, /Config installed for (.+)$/im);
-        return v ? `HMA config: ${v}` : 'HMA config installed';
+        return v ? t('history_desc_hma_config', 'HMA config: {variant}').replace('{variant}', v) : t('history_desc_hma_config_installed', 'HMA config installed');
       }
-      if (o.includes('Download returned empty') || o.includes('download failed')) return 'HMA download failed';
-      return 'HMA done';
+      if (o.includes('Download returned empty') || o.includes('download failed')) return t('history_desc_hma_download_failed', 'HMA download failed');
+      return t('history_desc_hma_done', 'HMA done');
     },
     'zygisk_next.sh': (o, c) => {
-      if (c !== 0) return extractError(o) || 'Zygisk Next not found';
+      if (c !== 0) return extractError(o) || t('history_desc_zygisk_not_found', 'Zygisk Next not found');
       const s = extractValue(o, /(\d+)\/3 settings applied/);
-      if (s) return `Zygisk: ${s}/3 set`;
-      if (o.includes('too low')) return 'Zygisk: version too low';
-      if (o.includes('not found')) return 'Zygisk Next not found';
-      return 'Zygisk Next configured';
+      if (s) return t('history_desc_zygisk_set', 'Zygisk: {count}/3 set').replace('{count}', s);
+      if (o.includes('too low')) return t('history_desc_zygisk_version_low', 'Zygisk: version too low');
+      if (o.includes('not found')) return t('history_desc_zygisk_not_found', 'Zygisk Next not found');
+      return t('history_desc_zygisk_configured', 'Zygisk Next configured');
     },
-    'cleanup.sh': () => 'Cleanup completed',
+    'cleanup.sh': () => t('history_desc_cleanup_completed', 'Cleanup completed'),
     'kill_all.sh': (o) => {
       const c = extractValue(o, /Cleared (\d+) packages/);
-      return c ? `Cleared ${c} packages` : 'Kill all done';
+      return c ? t('history_desc_cleared_packages', 'Cleared {count} packages').replace('{count}', c) : t('history_desc_kill_all_done', 'Kill all done');
     },
     'restore_backups.sh': (o, c) => {
-      if (c !== 0) return extractError(o) || 'No backups to restore';
+      if (c !== 0) return extractError(o) || t('history_desc_no_backups', 'No backups to restore');
       const r = extractValue(o, /Restored (\d+) files/);
-      return r ? `Restored ${r} files` : 'Backups restored';
+      return r ? t('history_desc_restored_files', 'Restored {count} files').replace('{count}', r) : t('history_desc_backups_restored', 'Backups restored');
     },
     'boot_state_props.sh': (o) => {
-      if (o.includes('No suspicious props found')) return 'No suspicious props';
-      if (o.includes('Suspicious props detected')) return 'Suspicious props cleaned';
-      return 'Boot props checked';
+      if (o.includes('No suspicious props found')) return t('history_desc_no_suspicious_props', 'No suspicious props');
+      if (o.includes('Suspicious props detected')) return t('history_desc_suspicious_props_cleaned', 'Suspicious props cleaned');
+      return t('history_desc_boot_props_checked', 'Boot props checked');
     },
     'widevine.sh': (o, c) => {
-      if (c !== 0) return extractError(o) || 'Widevine failed';
-      if (o.includes('KmInstallKeybox completed')) return 'Widevine: key installed';
-      if (o.includes('not found')) return 'Widevine: no KmInstallKeybox';
-      return 'Widevine done';
+      if (c !== 0) return extractError(o) || t('history_desc_widevine_failed', 'Widevine failed');
+      if (o.includes('KmInstallKeybox completed')) return t('history_desc_widevine_key_installed', 'Widevine: key installed');
+      if (o.includes('not found')) return t('history_desc_widevine_no_keybox', 'Widevine: no KmInstallKeybox');
+      return t('history_desc_widevine_done', 'Widevine done');
     },
     'check_tee_hash.sh': (o) => {
       const s = extractValue(o, /tee_status=(\w+)/);
       if (s === 'normal') {
         const h = extractValue(o, /tee_hash=([a-f0-9]+)/);
-        return h ? `TEE normal · ${h.slice(0, 8)}` : 'TEE normal';
+        return h ? t('history_desc_tee_normal_hash', 'TEE normal · {hash}').replace('{hash}', h.slice(0, 8)) : t('history_desc_tee_normal', 'TEE normal');
       }
-      if (s === 'broken') return 'TEE broken';
-      if (s === 'error') return 'TEE check error';
-      return 'TEE check done';
+      if (s === 'broken') return t('history_desc_tee_broken', 'TEE broken');
+      if (s === 'error') return t('history_desc_tee_error', 'TEE check error');
+      return t('history_desc_tee_done', 'TEE check done');
     },
     'boot_hash.sh': (o, c) => {
-      if (c !== 0) return extractError(o) || 'Boot hash failed';
+      if (c !== 0) return extractError(o) || t('history_desc_boot_hash_failed', 'Boot hash failed');
       const src = extractValue(o, /\[BOOT_HASH\].*Source:\s*(.+)$/im);
-      return src ? `Boot hash: ${src}` : 'Boot hash set';
+      return src ? t('history_desc_boot_hash', 'Boot hash: {source}').replace('{source}', src) : t('history_desc_boot_hash_set', 'Boot hash set');
     },
   };
 

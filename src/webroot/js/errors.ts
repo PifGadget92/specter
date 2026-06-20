@@ -1,3 +1,7 @@
+import { getTranslation } from './i18n.js';
+
+const t = (key: string, fallback: string): string => getTranslation(key) || fallback;
+
 /** Base error for all Specter application errors. Includes a machine-readable `code` and optional `context` payload. */
 export class SpecterError extends Error {
   readonly code: string
@@ -24,7 +28,7 @@ export class ScriptError extends BridgeError {
   readonly result?: { success: boolean; output?: string; rawOutput: string }
 
   constructor(result: { success: boolean; output?: string; rawOutput: string }) {
-    super('SCRIPT_ERROR', 'Script execution failed', { result })
+    super('SCRIPT_ERROR', t('error_script_failed', 'Script execution failed'), { result })
     this.name = 'ScriptError'
     this.result = result
   }
@@ -33,7 +37,7 @@ export class ScriptError extends BridgeError {
 /** A bridge operation exceeded the configured timeout. */
 export class TimeoutError extends BridgeError {
   constructor() {
-    super('TIMEOUT', 'Operation timed out')
+    super('TIMEOUT', t('error_operation_timed_out', 'Operation timed out'))
     this.name = 'TimeoutError'
   }
 }

@@ -56,15 +56,6 @@ unset _tee_val
 
 ui_print ""
 
-# Install missing: Zygisk Next
-if [ -z "$_zygisk_name" ]; then
-  ui_print "- Installing Zygisk Next by Dr-TSNG.."
-  if install_module_from_github "Dr-TSNG/ZygiskNext" "Zygisk Next"; then
-    ui_print "- Zygisk Next installed"
-  else
-    ui_print "- Zygisk Next not available"
-  fi
-fi
 unset _zygisk_name
 
 # Install missing: TEESimulator-RS
@@ -77,17 +68,6 @@ if [ -z "$_ts_name" ]; then
   fi
 fi
 unset _ts_name
-
-# Install missing: Play Integrity Fix
-if [ -z "$_pif_name" ]; then
-  ui_print "- Installing PlayIntegrityFix by KOWX712.."
-  if install_module_from_github "KOWX712/PlayIntegrityFix" "Play Integrity Fix"; then
-    ui_print "- Play Integrity Fix installed"
-  else
-    ui_print "- Play Integrity Fix not available"
-  fi
-fi
-unset _pif_name
 
 # Mark first-boot setup as pending (runs once after reboot in service.sh)
 touch "$MODPATH/.first_boot_pending"
@@ -102,6 +82,8 @@ cp "$MODPATH/module.prop" "$MODPATH/module.prop.bak"
 mkdir -p "$SPECTER_DIR"
 echo "1" > "$SPECTER_DIR/tee_reported"
 echo "1" > "$SPECTER_DIR/rom_spoof_reported"
+echo "1" > "$SPECTER_DIR/pif_reported"
+unset _pif_name
 
 # Ensure backup dir exists for first-boot snapshot
 mkdir -p "$SPECTER_DIR/backup"
@@ -111,6 +93,6 @@ mkdir -p "$SPECTER_DIR/config"
 cp "$MODPATH/config/conflicts.txt" "$SPECTER_DIR/config/conflicts.txt" 2>/dev/null || true
 
 ui_print ""
-ui_print " >> First-boot setup: backup, target, security patch, keybox, PIF (next reboot)"
+ui_print " >> First-boot setup: backup, target, security patch, keybox (next reboot)"
 
 return 0

@@ -78,9 +78,9 @@ export function wireKeyboxInstallButton() {
       cfgSet('kb_custom_type', '');
       cfgSet('kb_custom_value', '');
       if (isDevMode()) {
-        await runDevAction('keybox.sh', btn, spinner);
+        await runDevAction('keybox.sh');
       } else {
-        await runSimpleAction('keybox.sh', btn, spinner);
+        await runSimpleAction('keybox.sh');
       }
       const moddir = getModuleDir();
       if (moddir) {

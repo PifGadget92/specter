@@ -1,3 +1,36 @@
+# v1.4.4.14
+
+**New**
+- Auto PIF background job (dialog-based interval config, fetches via pif.sh on schedule)
+- `pif_reported` token — first-boot suppress of PIF auto-install (consumed in action.sh)
+- Boot hash dialog paste/zero icon buttons inside text field
+- Contributor roles translated + re-render on language switch
+
+**Changed**
+- `action.sh` PIF block: token present → skip silently, terminal → volume key prompt, else → log skip
+- PIF auto-install removed from `customize.sh` (handled entirely by action.sh)
+- All 55+ history descriptions use `t()` i18n calls (DESCRIPTION_EXTRACTORS)
+- `ScriptError`/`TimeoutError` messages use `t()` translations
+- `loadContributors` waits for i18n init before rendering
+- `auto_target_interval_desc` minimum raised from 1s to 3s
+- Keybox install no longer passes unused spinner args
+
+**i18n**
+- 70 new keys added to `string.json` (autopif, history descriptions, error strings, font toggles, keybox provider, boot hash placeholders)
+- All 4 translation files synced to 376 keys with machine translations
+- 87 previously-untranslated old keys translated across ar/es/ru/zh
+- `data-i18n` for boot hash placeholder, zero aria-label, font toggles
+
+**Fixed**
+- `keybox-ui.ts`: extra args removed from `runDevAction`/`runSimpleAction`
+- `tee-hash-ui.ts`: dead `cacheDir()` + unused `getModuleDir` import removed
+- `toggles.ts`: unused `ToggleDef` import removed
+- `autopif-ui.ts`: null check for dialog elements
+
+**Removed**
+- Zygisk Next auto-download & install from customize.sh
+- English-only copies from translation files (fallback from string.json)
+
 # v1.4.4.13
 
 **New**

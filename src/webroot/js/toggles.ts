@@ -1,6 +1,5 @@
 import { cfgGet, cfgSet, cfgInvalidate } from './cfg.js';
 import { CONTROL_TOGGLES } from './constants.js';
-import type { ToggleDef } from './constants.js';
 import { setDevMode } from './state.js';
 
 function labelFromKey(key: string): string {
