@@ -232,31 +232,134 @@ export function renderActivityPreview() {
 
   container.innerHTML = '';
 
-  function pickDescription(output: string): string {
-    const lines = output.split('\n');
-    let candidate = '';
-    let errorLine = '';
-    for (const raw of lines) {
-      const line = raw.trim();
-      if (!line) continue;
-      const cleaned = line.replace(/^\[[A-Z_]+\]\s*/, '');
-      if (!cleaned) continue;
-      const oneWord = /^(Start|Finish|Done|OK|Success|Failed|Error|Exit)/i.test(cleaned);
-      if (oneWord) continue;
-      if ((line.includes('[!]') && !line.includes('note:')) || line.toLowerCase().includes('error')) {
-        errorLine = cleaned;
-        continue;
+  function extractValue(output: string, pattern: RegExp): string | null {
+    const m = output.match(pattern);
+    return m ? (m[1] ?? null) : null;
+  }
+
+  function extractError(output: string): string | null {
+    const m = output.match(/^\[?!\]?\s*(?:Error|Warning):\s*(.+)$/im);
+    return m ? (m[1]?.trim() ?? null) : null;
+  }
+
+  const DESCRIPTION_EXTRACTORS: Record<string, (o: string, c: number) => string | null> = {
+    'keybox.sh': (o, c) => {
+      if (c !== 0) return extractError(o) || 'Keybox install failed';
+      const src = extractValue(o, /(?:Auto-selected|Selected provider|Fallback selected)[:\s]+(.+)$/im);
+      if (src) return `Keybox: ${src}`;
+      if (o.includes('Custom keybox installed from')) return 'Keybox: custom file';
+      if (o.includes('Custom keybox installed from URL')) return 'Keybox: custom URL';
+      return 'Keybox installed';
+    },
+    'gms.sh': (o) => {
+      const count = extractValue(o, /Force-stopped (\d+) packages/i);
+      const cleared = o.includes('Play Store data cleared');
+      if (count && cleared) return `Stop ${count} + Play Store cleared`;
+      if (count) return `Stop ${count} packages`;
+      if (cleared) return 'Play Store cleared';
+      return 'GMS action done';
+    },
+    'target.sh': (o, c) => {
+      if (c !== 0) return extractError(o) || 'Target update failed';
+      if (o.includes('Denylist merge')) {
+        const a = extractValue(o, /added (\d+)/);
+        return a ? `Denylist +${a}` : 'Denylist merged';
       }
-      candidate = cleaned;
+      if (o.includes('Mode: merge')) {
+        const a = extractValue(o, /added (\d+)/);
+        return a ? `Merge +${a}` : 'Targets merged';
+      }
+      const w = extractValue(o, /Wrote (\d+) entries/);
+      return w ? `Wrote ${w} targets` : 'Target updated';
+    },
+    'pif.sh': (o, c) => {
+      if (c !== 0) return extractError(o) || 'PIF update failed';
+      const model = extractValue(o, /MODEL=(\S+)/);
+      if (model) return `PIF: ${model}`;
+      const name = extractValue(o, /Detected:\s*(.+)$/im);
+      return name ? `PIF updated (${name})` : 'PIF updated';
+    },
+    'rom_spoof_cleanup.sh': (o) => {
+      if (o.includes('No spoof engines found')) return 'No spoof engines';
+      if (o.includes('Spoof engines detected')) return 'Spoof engines cleaned';
+      return 'Spoof check done';
+    },
+    'hma.sh': (o) => {
+      if (o.includes('No HMA variant installed')) return 'No HMA found';
+      if (o.includes('Config installed')) {
+        const v = extractValue(o, /Config installed for (.+)$/im);
+        return v ? `HMA config: ${v}` : 'HMA config installed';
+      }
+      if (o.includes('Download returned empty') || o.includes('download failed')) return 'HMA download failed';
+      return 'HMA done';
+    },
+    'zygisk_next.sh': (o, c) => {
+      if (c !== 0) return extractError(o) || 'Zygisk Next not found';
+      const s = extractValue(o, /(\d+)\/3 settings applied/);
+      if (s) return `Zygisk: ${s}/3 set`;
+      if (o.includes('too low')) return 'Zygisk: version too low';
+      if (o.includes('not found')) return 'Zygisk Next not found';
+      return 'Zygisk Next configured';
+    },
+    'cleanup.sh': () => 'Cleanup completed',
+    'kill_all.sh': (o) => {
+      const c = extractValue(o, /Cleared (\d+) packages/);
+      return c ? `Cleared ${c} packages` : 'Kill all done';
+    },
+    'restore_backups.sh': (o, c) => {
+      if (c !== 0) return extractError(o) || 'No backups to restore';
+      const r = extractValue(o, /Restored (\d+) files/);
+      return r ? `Restored ${r} files` : 'Backups restored';
+    },
+    'boot_state_props.sh': (o) => {
+      if (o.includes('No suspicious props found')) return 'No suspicious props';
+      if (o.includes('Suspicious props detected')) return 'Suspicious props cleaned';
+      return 'Boot props checked';
+    },
+    'widevine.sh': (o, c) => {
+      if (c !== 0) return extractError(o) || 'Widevine failed';
+      if (o.includes('KmInstallKeybox completed')) return 'Widevine: key installed';
+      if (o.includes('not found')) return 'Widevine: no KmInstallKeybox';
+      return 'Widevine done';
+    },
+    'check_tee_hash.sh': (o) => {
+      const s = extractValue(o, /tee_status=(\w+)/);
+      if (s === 'normal') {
+        const h = extractValue(o, /tee_hash=([a-f0-9]+)/);
+        return h ? `TEE normal · ${h.slice(0, 8)}` : 'TEE normal';
+      }
+      if (s === 'broken') return 'TEE broken';
+      if (s === 'error') return 'TEE check error';
+      return 'TEE check done';
+    },
+    'boot_hash.sh': (o, c) => {
+      if (c !== 0) return extractError(o) || 'Boot hash failed';
+      const src = extractValue(o, /\[BOOT_HASH\].*Source:\s*(.+)$/im);
+      return src ? `Boot hash: ${src}` : 'Boot hash set';
+    },
+  };
+
+  function getScriptDescription(script: string, output: string): string {
+    const m = output.match(/exited \(code: (\d+)\)/);
+    const code = m ? parseInt(m[1] ?? '') : (output.includes('[!]') ? 1 : 0);
+    const desc = DESCRIPTION_EXTRACTORS[script]?.(output, code);
+    if (desc) return desc.slice(0, 50);
+
+    // Fallback: pick first meaningful line
+    for (const line of output.split('\n')) {
+      const cleaned = line.trim().replace(/^\[[A-Z_]+\]\s*/, '');
+      if (!cleaned) continue;
+      if (/^(Start|Finish|Done|OK|Success|Failed|Error|Exit)/i.test(cleaned)) continue;
+      return cleaned.slice(0, 50);
     }
-    return (candidate || errorLine || '').slice(0, 40);
+    return '';
   }
 
   function createItem(entry: { script: string; output: string; time: string }): HTMLElement {
     const isError = (entry.output.includes('[!]') && !entry.output.includes('note:')) || entry.output.toLowerCase().includes('error');
     const i18nKey = getFriendlyNames()[entry.script];
     const friendlyName = (i18nKey && t(i18nKey, '')) || entry.script;
-    const desc = pickDescription(entry.output);
+    const desc = getScriptDescription(entry.script, entry.output);
     const timeAgo = formatRelativeTime(entry.time);
     const statusIcon = isError ? 'error' : 'check_circle';
     const iconType = isError ? 'error' : 'success';

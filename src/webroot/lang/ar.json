@@ -296,5 +296,13 @@
   "tee_status_error": "خطأ",
   "tee_status_label": "حالة TEE",
   "tee_status_normal": "طبيعي",
-  "tee_status_unknown": "غير معروف"
+  "tee_status_unknown": "غير معروف",
+  "tee_tier_label": "مستوى الأمان",
+  "tee_tier_strongbox": "StrongBox",
+  "tee_tier_tee": "TEE",
+  "tee_tier_software": "برمجي",
+  "tee_tier_unknown": "غير معروف",
+  "boot_hash_tee": "BHash (TEE)",
+  "boot_hash_prop": "BHash (خاصية)",
+  "boot_hash_calc": "BHash (محسوبة)"
 }

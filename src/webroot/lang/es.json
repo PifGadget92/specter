@@ -296,5 +296,13 @@
   "tee_status_error": "Error",
   "tee_status_label": "Estado del TEE",
   "tee_status_normal": "Normal",
-  "tee_status_unknown": "Desconocido"
+  "tee_status_unknown": "Desconocido",
+  "tee_tier_label": "Nivel de seguridad",
+  "tee_tier_strongbox": "StrongBox",
+  "tee_tier_tee": "TEE",
+  "tee_tier_software": "Software",
+  "tee_tier_unknown": "Desconocido",
+  "boot_hash_tee": "BHash (TEE)",
+  "boot_hash_prop": "BHash (Prop)",
+  "boot_hash_calc": "BHash (Calc)"
 }

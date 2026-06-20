@@ -39,6 +39,7 @@ export interface InfoJson {
   root_sol?: string;
   version?: string;
   tee_status?: string;
+  tee_tier?: number;
   security_patch?: string;
   build_patch?: string;
   pif_model?: string;

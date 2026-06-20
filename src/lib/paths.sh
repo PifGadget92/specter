@@ -18,6 +18,9 @@ TARGET_TXT="$TRICKY_DIR/target.txt"
 SECURITY_PATCH_FILE="$TRICKY_DIR/security_patch.txt"
 TEE_STATUS="$SPECTER_DIR/tee_status"
 TEE_HASH="$SPECTER_DIR/tee_hash"
+TEE_TIER="$SPECTER_DIR/tee_tier"
+TEE_KEYMASTER_VER="$SPECTER_DIR/tee_keymaster_version"
+TEE_CHALLENGE="$SPECTER_DIR/tee_challenge"
 VBMETA_DIGEST="$SPECTER_DIR/vbmeta_digest"
 
 # Other system paths

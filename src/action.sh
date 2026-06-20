@@ -26,9 +26,13 @@ log_rotate "$ACTION_LOG"
       log "ACTION" "PIF not found, installing KOWX712/PlayIntegrityFix..."
       install_module_from_github "KOWX712/PlayIntegrityFix" "Play Integrity Fix" || \
         log "ACTION" "PIF auto-install failed"
+      log "ACTION" "PIF installed — reboot required before running autopif"
+      _pif_installed=1
     fi
     unset _pif_name
-    [ -f "$MODDIR/features/pif.sh" ] && sh "$MODDIR/features/pif.sh" || true
+    if [ -z "$_pif_installed" ] && [ -f "$MODDIR/features/pif.sh" ]; then
+      sh "$MODDIR/features/pif.sh" || true
+    fi
   fi
 
   run_device_info "$MODDIR"

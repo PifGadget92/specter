@@ -1,3 +1,22 @@
+# v1.4.4.13
+
+**New**
+- `boot_hash.sh` — zero-rejection boot hash priority chain (TS file → TEE → prop → partition)
+- Zygisk Next auto-install in customize.sh (+ PIF-style zygisk detection via libzygisk.so + Magisk SQLite)
+- Conflict uninstall runs module's `uninstall.sh` before removing dir
+
+**Changed**
+- `apply_vbmeta_props()` no longer sets digest prop (moved to `boot_hash.sh`)
+- `service.sh` runs `boot_hash.sh` after `tee.sh`
+- `customize.sh` refactored: detect all modules first → summary → install only missing → first-boot
+- Install order: Zygisk Next → TEESimulator-RS → PIF
+
+**Fixed**
+- Boot hash never set to zeros — every source rejects all-zero values
+
+**Improved**
+- Recent activity shows per-script descriptions (e.g. "Keybox: Yuri v54", "TEE normal · 9530...")
+
 # v1.4.4.12
 
 **New**

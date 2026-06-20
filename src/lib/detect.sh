@@ -37,6 +37,20 @@ _pif_prop() {
   module_detect "playintegrityfix"
 }
 
+_zygisk_variant() {
+  for _zd in /data/adb/modules/* /data/adb/modules_update/*; do
+    [ -d "$_zd" ] || continue
+    [ -f "$_zd/lib32/libzygisk.so" ] || [ -f "$_zd/lib64/libzygisk.so" ] || continue
+    grep "^name=" "$_zd/module.prop" 2>/dev/null | cut -d= -f2
+    return 0
+  done
+  if [ -d "/data/adb/magisk" ]; then
+    _z=$(magisk --sqlite "SELECT value FROM settings WHERE key='zygisk';" 2>/dev/null)
+    [ "$_z" = "value=1" ] && echo "Magisk built-in" && return 0
+  fi
+  echo ""
+}
+
 _ts_prop() {
   for _ts_dir in "$MODULES_BASE/tricky_store" "${MODULES_BASE}_update/tricky_store"; do
     [ -f "$_ts_dir/module.prop" ] || continue

@@ -50,6 +50,7 @@ _conflict_uninstall() {
   _cu_dir_upd="${MODULES_BASE}_update/${_cu_dir##*/}"
   for _cu_path in "$_cu_dir" "$_cu_dir_upd"; do
     [ -d "$_cu_path" ] || continue
+    [ -f "$_cu_path/uninstall.sh" ] && sh "$_cu_path/uninstall.sh" 2>/dev/null || true
     rm -rf "$_cu_path"
     log "CONFLICT" "Uninstalled $_cu_name ($_cu_id)"
     _cu_removed=0

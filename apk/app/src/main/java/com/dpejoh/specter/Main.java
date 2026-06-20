@@ -17,56 +17,25 @@ import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
+import java.util.Arrays;
+
+import com.dpejoh.specter.attestation.Attestation;
+import com.dpejoh.specter.attestation.RootOfTrust;
 
 public class Main {
 
     private static final String TAG = "Specter";
     private static final String ALIAS = "specter_tee_check";
-    private static final String ATTESTATION_OID = "1.3.6.1.4.1.11129.2.1.17";
-
-    // ASN.1 tag constants matching TEESimulator's AttestationConstants
-    private static final int KEY_DESCRIPTION_TEE_ENFORCED_INDEX = 7;
-    private static final int ROOT_OF_TRUST_VERIFIED_BOOT_HASH_INDEX = 3;
-    private static final int TAG_ROOT_OF_TRUST = 704;
 
     public static void main(String[] args) {
         String specterDir = "/data/adb/specter";
         if (args.length > 0) specterDir = args[0];
 
         prepareEnvironment();
-
-        String hash = runAttestationCheck();
-
-        boolean teeFunctional = hash != null;
-        Log.i(TAG, "TEE status: " + (teeFunctional ? "normal" : "broken"));
-        if (hash != null) Log.i(TAG, "Boot hash: " + hash);
-
-        try {
-            new File(specterDir).mkdirs();
-            try (OutputStreamWriter w = new OutputStreamWriter(
-                    new FileOutputStream(new File(specterDir, "tee_status")), StandardCharsets.UTF_8)) {
-                w.write("tee_broken=" + !teeFunctional + "\n");
-            }
-            if (hash != null) {
-                try (OutputStreamWriter w = new OutputStreamWriter(
-                        new FileOutputStream(new File(specterDir, "tee_hash")), StandardCharsets.UTF_8)) {
-                    w.write(hash + "\n");
-                }
-                File vbmeta = new File(specterDir, "vbmeta_digest");
-                if (!vbmeta.exists()) {
-                    try (OutputStreamWriter w = new OutputStreamWriter(
-                            new FileOutputStream(vbmeta), StandardCharsets.UTF_8)) {
-                        w.write(hash + "\n");
-                    }
-                }
-            }
-            Log.i(TAG, "Results written to " + specterDir);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to write status files", e);
-        }
+        runAttestationCheck(specterDir);
     }
 
-    private static String runAttestationCheck() {
+    private static void runAttestationCheck(String specterDir) {
         try {
             KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
@@ -89,114 +58,79 @@ public class Main {
             keyStore.deleteEntry(ALIAS);
             if (chain == null || chain.length == 0) {
                 Log.w(TAG, "Empty certificate chain");
-                return null;
+                writeFailure(specterDir);
+                return;
             }
 
-            byte[] ext = ((X509Certificate) chain[0]).getExtensionValue(ATTESTATION_OID);
-            if (ext == null) {
-                Log.w(TAG, "No attestation extension");
-                return null;
-            }
+            X509Certificate leaf = (X509Certificate) chain[0];
+            Attestation att = Attestation.loadFromCertificate(leaf);
+            RootOfTrust root = att.getRootOfTrust();
 
-            return parseBootHash(ext);
+            writeResults(specterDir, att, root, challenge);
         } catch (Exception e) {
             Log.w(TAG, "Full attestation failed", e);
-            return null;
+            writeFailure(specterDir);
         }
     }
 
-    private static String parseBootHash(byte[] ext) {
+    private static void writeResults(
+            String dir, Attestation att, RootOfTrust root, byte[] challenge
+    ) {
         try {
-            DerReader r = new DerReader(ext);
-            byte[] keyDesc = r.read().value;            // unwrap OCTET STRING
-            byte[] fields = r.read(keyDesc).value;       // KeyDescription SEQUENCE
+            new File(dir).mkdirs();
 
-            r = new DerReader(fields);
-            int idx = 0;
-            while (true) {
-                DerTlv f = r.read();
-                if (f == null) break;
-                if (idx == KEY_DESCRIPTION_TEE_ENFORCED_INDEX) {
-                    DerReader tee = new DerReader(f.value);
-                    while (true) {
-                        DerTlv t = tee.read();
-                        if (t == null) break;
-                        if (t.tag == TAG_ROOT_OF_TRUST) {
-                            byte[] rotSeq = tee.read(t.value).value;
-                            DerReader rot = new DerReader(rotSeq);
-                            for (int i = 0; i <= ROOT_OF_TRUST_VERIFIED_BOOT_HASH_INDEX; i++) {
-                                DerTlv rf = rot.read();
-                                if (rf == null) return null;
-                                if (i == ROOT_OF_TRUST_VERIFIED_BOOT_HASH_INDEX) {
-                                    return bytesToHex(rf.value);
-                                }
-                            }
-                        }
-                    }
-                }
-                idx++;
+            String hash = root != null ? root.verifiedBootHashHex() : null;
+            int tier = att.getAttestationSecurityLevel();
+            int keymasterVersion = att.getKeymasterVersion();
+            boolean challengeVerified = challenge != null
+                    && att.getAttestationChallenge() != null
+                    && Arrays.equals(challenge, att.getAttestationChallenge());
+            boolean teeBroken = hash == null;
+
+            writeFile(new File(dir, "tee_status"),
+                    "tee_broken=" + teeBroken + "\n" +
+                    "challenge_verified=" + challengeVerified + "\n");
+
+            if (hash != null) {
+                writeFile(new File(dir, "tee_hash"), hash + "\n");
             }
+
+            writeFile(new File(dir, "tee_tier"), tier + "\n");
+            writeFile(new File(dir, "tee_keymaster_version"), keymasterVersion + "\n");
+            writeFile(new File(dir, "tee_challenge"),
+                    "challenge_verified=" + challengeVerified + "\n");
+
+            File vbmeta = new File(dir, "vbmeta_digest");
+            if (hash != null && !vbmeta.exists()) {
+                writeFile(vbmeta, hash + "\n");
+            }
+
+            Log.i(TAG, "TEE status: " + (teeBroken ? "broken" : "normal") +
+                    ", tier=" + tier +
+                    ", kmVer=" + keymasterVersion +
+                    ", challengeOk=" + challengeVerified);
+            if (hash != null) Log.i(TAG, "Boot hash: " + hash);
+
         } catch (Exception e) {
-            Log.w(TAG, "Failed to parse boot hash", e);
+            Log.e(TAG, "Failed to write status files", e);
         }
-        return null;
     }
 
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes)
-            sb.append("0123456789abcdef".charAt((b >> 4) & 0xf))
-              .append("0123456789abcdef".charAt(b & 0xf));
-        return sb.toString();
+    private static void writeFailure(String dir) {
+        try {
+            new File(dir).mkdirs();
+            writeFile(new File(dir, "tee_status"),
+                    "tee_broken=true\nchallenge_verified=false\n");
+            Log.w(TAG, "TEE status: broken");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to write failure status", e);
+        }
     }
 
-    private static class DerTlv {
-        final int tag;
-        final byte[] value;
-        DerTlv(int tag, byte[] value) { this.tag = tag; this.value = value; }
-    }
-
-    private static class DerReader {
-        private final byte[] data;
-        private int pos;
-
-        DerReader(byte[] data) { this.data = data; }
-
-        DerTlv read() {
-            if (pos >= data.length) return null;
-            int tag = data[pos++] & 0xFF;
-            int tagNum = tag & 0x1F;
-            if (tagNum == 0x1F) tagNum = readTagNumber();
-            int len = readLength();
-            if (len < 0 || pos + len > data.length) return null;
-            byte[] val = new byte[len];
-            System.arraycopy(data, pos, val, 0, len);
-            pos += len;
-            return new DerTlv(tagNum, val);
-        }
-
-        DerTlv read(byte[] value) { return new DerReader(value).read(); }
-
-        private int readTagNumber() {
-            int num = 0;
-            while (pos < data.length) {
-                int b = data[pos++] & 0xFF;
-                num = (num << 7) | (b & 0x7F);
-                if ((b & 0x80) == 0) break;
-            }
-            return num;
-        }
-
-        private int readLength() {
-            if (pos >= data.length) return -1;
-            int b = data[pos++] & 0xFF;
-            if (b < 0x80) return b;
-            int numBytes = b & 0x7F;
-            if (numBytes == 0 || pos + numBytes > data.length) return -1;
-            int len = 0;
-            for (int i = 0; i < numBytes; i++)
-                len = (len << 8) | (data[pos++] & 0xFF);
-            return len;
+    private static void writeFile(File file, String content) throws Exception {
+        try (OutputStreamWriter w = new OutputStreamWriter(
+                new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            w.write(content);
         }
     }
 

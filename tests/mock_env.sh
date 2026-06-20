@@ -49,6 +49,11 @@ LOGS_DIR="$MOCK_DIR/logs"
 mkdir -p "$PROPS_DIR" "$LOGS_DIR"
 
 case "${1:-}" in
+  --delete)
+    NAME="$2"
+    rm -f "$PROPS_DIR/$NAME"
+    echo "DELETE $NAME" >> "$LOGS_DIR/resetprop.log"
+    ;;
   -n)
     NAME="$2" VAL="$3"
     printf '%s' "$VAL" > "$PROPS_DIR/$NAME"

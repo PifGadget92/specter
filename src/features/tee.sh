@@ -45,6 +45,18 @@ if [ -f "$TEE_HASH" ]; then
 else
   log "TEE" "Hash: unavailable"
 fi
-unset _b _h
+
+if [ -f "$TEE_TIER" ]; then
+  _t=$(cat "$TEE_TIER" | tr -d ' \n')
+  case "$_t" in
+    0) _tn="Software" ;;
+    1) _tn="TEE" ;;
+    2) _tn="StrongBox" ;;
+    *) _tn="Unknown(${_t})" ;;
+  esac
+  log "TEE" "Tier: $_tn"
+  unset _tn
+fi
+unset _b _h _t
 
 log "TEE" "Done"

@@ -2,12 +2,12 @@
 
 plan "vbmeta.sh — apply_vbmeta_props + feature script"
 
-# ---- apply_vbmeta_props: sets digest from cache ----
+# ---- apply_vbmeta_props: no longer sets digest (moved to boot_hash.sh) ----
 bootstrap
 source_libs
 echo "abc123digest" > "$VBMETA_DIGEST"
 apply_vbmeta_props
-assert_prop_eq "vbmeta: digest from cache" "ro.boot.vbmeta.digest" "abc123digest"
+assert_prop_not_set "vbmeta: digest not set by apply_vbmeta_props" "ro.boot.vbmeta.digest"
 
 # ---- apply_vbmeta_props: preserves existing avb props ----
 bootstrap

@@ -296,5 +296,13 @@
   "tee_status_error": "Ошибка",
   "tee_status_label": "Состояние TEE",
   "tee_status_normal": "Нормальный",
-  "tee_status_unknown": "Неизвестно"
+  "tee_status_unknown": "Неизвестно",
+  "tee_tier_label": "Уровень безопасности",
+  "tee_tier_strongbox": "StrongBox",
+  "tee_tier_tee": "TEE",
+  "tee_tier_software": "Программный",
+  "tee_tier_unknown": "Неизвестно",
+  "boot_hash_tee": "BHash (TEE)",
+  "boot_hash_prop": "BHash (Свойство)",
+  "boot_hash_calc": "BHash (Вычислено)"
 }

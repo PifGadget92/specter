@@ -65,9 +65,10 @@ export function wireTeeHash() {
       const teeStatus = params['tee_status'] || 'unknown';
       const teeHash = params['tee_hash'] || '';
       const vbmetaHash = params['vbmeta_hash'] || '';
-      const bootHash = params['boot_hash'] || teeHash || vbmetaHash || t('boot_hash_unavailable', 'Not available');
+      const bootHash = params['boot_hash'] || '';
+      const teeTier = params['tee_tier'] || '';
 
-      showResultDialog(teeStatus, bootHash, teeHash, vbmetaHash);
+      showResultDialog(teeStatus, teeHash, bootHash, vbmetaHash, teeTier);
 
       addEntry('check_tee_hash.sh', stdout);
     } catch {
@@ -81,9 +82,10 @@ export function wireTeeHash() {
 
 function showResultDialog(
   teeStatus: string,
-  bootHash: string,
   teeHash: string,
+  bootHash: string,
   vbmetaHash: string,
+  teeTier: string,
 ) {
   const statusIcon = teeStatus === 'normal' ? 'check_circle' : teeStatus === 'broken' ? 'error' : 'help';
   const statusClass = `tee-status--${teeStatus === 'normal' ? 'normal' : teeStatus === 'broken' ? 'broken' : 'unknown'}`;
@@ -91,6 +93,30 @@ function showResultDialog(
     : teeStatus === 'broken' ? t('tee_status_broken', 'Broken')
     : teeStatus === 'error' ? t('tee_status_error', 'Error')
     : t('tee_status_unknown', 'Unknown');
+
+  const tierIcon = teeTier === '2' ? 'verified' : teeTier === '1' ? 'security' : 'shield';
+  const tierLabel = teeTier === '2' ? t('tee_tier_strongbox', 'StrongBox')
+    : teeTier === '1' ? t('tee_tier_tee', 'TEE')
+    : teeTier === '0' ? t('tee_tier_software', 'Software')
+    : t('tee_tier_unknown', 'Unknown');
+
+  const mismatch = vbmetaHash && teeHash && vbmetaHash !== teeHash;
+  const teeClass = mismatch ? 'boot-hash-text boot-hash-text--mismatch' : 'boot-hash-text';
+  const vbmetaClass = mismatch ? 'boot-hash-text boot-hash-text--mismatch' : 'boot-hash-text';
+
+  function hashRow(label: string, hash: string, id: string, extraClass: string): string {
+    if (!hash) return '';
+    return `
+    <div class="tee-hash-row">
+      <span class="tee-hash-label">${label}</span>
+      <span class="tee-hash-value">
+        <code class="${extraClass}">${hash}</code>
+        <md-icon-button id="${id}" aria-label="${t('history_copy', 'Copy')}">
+          <md-icon aria-hidden="true">content_copy</md-icon>
+        </md-icon-button>
+      </span>
+    </div>`;
+  }
 
   const content = `
     <div class="tee-hash-row">
@@ -102,16 +128,19 @@ function showResultDialog(
         </span>
       </span>
     </div>
-    <md-divider class="settings-divider"></md-divider>
     <div class="tee-hash-row">
-      <span class="tee-hash-label">${t('boot_hash', 'Boot Hash')}</span>
+      <span class="tee-hash-label">${t('tee_tier_label', 'Security Tier')}</span>
       <span class="tee-hash-value">
-        <code class="boot-hash-text">${bootHash}</code>
-        <md-icon-button id="tee-hash-copy" aria-label="${t('history_copy', 'Copy')}">
-          <md-icon aria-hidden="true">content_copy</md-icon>
-        </md-icon-button>
+        <span class="tee-tier-badge">
+          <md-icon aria-hidden="true">${tierIcon}</md-icon>
+          ${tierLabel}
+        </span>
       </span>
     </div>
+    <md-divider class="settings-divider"></md-divider>
+    ${hashRow(t('boot_hash_tee', 'Boot Hash (TEE)'), teeHash, 'tee-hash-copy-tee', teeClass)}
+    ${hashRow(t('boot_hash_prop', 'Boot Hash (Prop)'), bootHash, 'tee-hash-copy-prop', 'boot-hash-text')}
+    ${hashRow(t('boot_hash_calc', 'Boot Hash (Calc)'), vbmetaHash, 'tee-hash-copy-calc', vbmetaClass)}
   `;
 
   const actions = `
@@ -128,17 +157,26 @@ function showResultDialog(
   document.body.appendChild(dialog);
 
   dialog.querySelector('#tee-hash-close')!.addEventListener('click', () => dialog.close());
-  dialog.querySelector('#tee-hash-copy')?.addEventListener('click', () => {
-    navigator.clipboard.writeText(bootHash).then(() => {
-      showToast(t('history_copied', 'Copied!'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
-    }).catch(() => {
-      showToast(t('history_copy_failed', 'Failed'), { icon: 'error', type: 'error', autoCloseDelay: 2000 });
+
+  const copyMap: Record<string, string> = {
+    'tee-hash-copy-tee': teeHash,
+    'tee-hash-copy-prop': bootHash,
+    'tee-hash-copy-calc': vbmetaHash,
+  };
+  for (const [id, hash] of Object.entries(copyMap)) {
+    dialog.querySelector(`#${id}`)?.addEventListener('click', () => {
+      if (!hash) return;
+      navigator.clipboard.writeText(hash).then(() => {
+        showToast(t('history_copied', 'Copied!'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2000 });
+      }).catch(() => {
+        showToast(t('history_copy_failed', 'Failed'), { icon: 'error', type: 'error', autoCloseDelay: 2000 });
+      });
     });
-  });
+  }
+
   dialog.querySelector('#tee-hash-save')!.addEventListener('click', async () => {
     try {
       const spDir = getSpDir();
-      const mod = cacheDir();
       const cmds: string[] = [];
 
       const teeBool = teeStatus === 'normal' ? 'false' : 'true';
@@ -147,6 +185,9 @@ function showResultDialog(
 
       if (teeHash) {
         cmds.push(`printf '%s\\n' ${shellEscape(teeHash)} > ${shellEscape(spDir + '/tee_hash')}`);
+      }
+      if (teeTier) {
+        cmds.push(`printf '%s\\n' ${shellEscape(teeTier)} > ${shellEscape(spDir + '/tee_tier')}`);
       }
       if (vbmetaHash) {
         cmds.push(`printf '%s\\n' ${shellEscape(vbmetaHash)} > ${shellEscape(spDir + '/vbmeta_digest')}`);

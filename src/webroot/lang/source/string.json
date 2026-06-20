@@ -294,5 +294,13 @@
   "boot_hash": "Boot Hash",
   "boot_hash_unavailable": "Not available",
   "cache_update": "Update cache",
-  "cache_updated": "Cache updated"
+  "cache_updated": "Cache updated",
+  "tee_tier_label": "Security Tier",
+  "tee_tier_strongbox": "StrongBox",
+  "tee_tier_tee": "TEE",
+  "tee_tier_software": "Software",
+  "tee_tier_unknown": "Unknown",
+  "boot_hash_tee": "BHash (TEE)",
+  "boot_hash_prop": "BHash (Prop)",
+  "boot_hash_calc": "BHash (Calc)"
 }

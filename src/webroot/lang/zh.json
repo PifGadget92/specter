@@ -296,5 +296,13 @@
   "tee_status_error": "错误",
   "tee_status_label": "TEE 状态",
   "tee_status_normal": "正常",
-  "tee_status_unknown": "未知"
+  "tee_status_unknown": "未知",
+  "tee_tier_label": "安全层级",
+  "tee_tier_strongbox": "StrongBox",
+  "tee_tier_tee": "TEE",
+  "tee_tier_software": "软件",
+  "tee_tier_unknown": "未知",
+  "boot_hash_tee": "BHash（TEE）",
+  "boot_hash_prop": "BHash（属性）",
+  "boot_hash_calc": "BHash（计算）"
 }

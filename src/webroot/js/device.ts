@@ -95,7 +95,15 @@ function applySecurityPatch(data: InfoJson) {
 function applyTeeStatus(data: InfoJson) {
   const spTee = document.getElementById('sp-tee');
   const status = data.tee_status || '';
-  const label = status === 'broken' ? t('tee_broken', 'Broken') : status === 'normal' ? t('tee_normal', 'Normal') : '—';
+  const tier = data.tee_tier;
+  let label = status === 'broken' ? t('tee_broken', 'Broken') : status === 'normal' ? t('tee_normal', 'Normal') : '—';
+  if (status === 'normal' && tier !== undefined) {
+    const tierName = tier === 2 ? t('tee_tier_strongbox', 'StrongBox')
+      : tier === 1 ? t('tee_tier_tee', 'TEE')
+      : tier === 0 ? t('tee_tier_software', 'Software')
+      : '';
+    if (tierName) label += ` (${tierName})`;
+  }
   if (spTee) {
     spTee.textContent = label;
     spTee.className = 'sp-hero-tee';

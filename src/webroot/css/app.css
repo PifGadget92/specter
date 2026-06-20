@@ -2486,6 +2486,7 @@ md-filled-tonal-button {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .tee-status-badge {
@@ -2513,6 +2514,21 @@ md-filled-tonal-button {
   color: var(--md-sys-color-on-surface-variant);
 }
 
+.tee-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--md-sys-color-tertiary) 18%, transparent);
+  color: var(--md-sys-color-tertiary);
+}
+.tee-tier-badge md-icon {
+  font-size: 18px;
+}
+
 #tee-hash-copy {
   --md-icon-button-icon-size: 16px;
   width: 28px;
@@ -2522,11 +2538,27 @@ md-filled-tonal-button {
   font-family: var(--sp-font-mono, 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'SF Mono', ui-monospace, monospace);
   font-size: 0.8125rem;
   color: var(--md-sys-color-on-surface);
-  word-break: break-all;
   user-select: all;
   -webkit-user-select: all;
   background: var(--md-sys-color-surface-container-highest);
   padding: 6px 10px;
   border-radius: 8px;
   line-height: 1.4;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.boot-hash-text--mismatch {
+  color: var(--md-sys-color-error);
+  background: color-mix(in srgb, var(--md-sys-color-error) 12%, transparent);
+}
+#tee-hash-copy-tee,
+#tee-hash-copy-prop,
+#tee-hash-copy-calc {
+  --md-icon-button-icon-size: 16px;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
 }
