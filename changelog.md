@@ -1,43 +1,18 @@
 # v1.4.4.14
 
-**New**
-- Auto PIF background job (dialog-based interval config, fetches via pif.sh on schedule)
-- `pif_reported` token, first-boot suppress of PIF auto-install (consumed in action.sh)
-- Boot hash dialog paste/zero icon buttons inside text field
-- Contributor roles translated + re-render on language switch
-
 **Changed**
-- `action.sh` PIF block: token present → skip silently, terminal → volume key prompt, else → log skip
-- PIF auto-install removed from `customize.sh` (handled entirely by action.sh)
-- All 55+ history descriptions use `t()` i18n calls (DESCRIPTION_EXTRACTORS)
-- `ScriptError`/`TimeoutError` messages use `t()` translations
-- `loadContributors` waits for i18n init before rendering
-- `auto_target_interval_desc` minimum raised from 1s to 3s
-- Keybox install no longer passes unused spinner args
 - Conflict system rewritten: toggle `.val` files are the single source of truth; `resolve_conflicts()` writes `toggle_<feature>=0` for claimed features; `_feature_should_run()` checks toggle only (removed separate `_conflict_claimed()` gate); conflict section priority switches batch-update toggles
-- `action.sh` and `auto_target.sh` use `_feature_should_run()` instead of manual toggle + `_conflict_claimed()` checks
+- `action.sh` and `auto_target.sh` use `_feature_should_run()` instead of manual `_conflict_claimed()` checks
 - `conflict_set_choice()` syncs feature toggles when priority changes
-- Feature names exposed in `conflict_status_json()` output + shown in UI hint text (`conflict_covers` key)
-- `exec()` bridge timeout added + exit code properly extracted from JSON responses
-- Dialog UIs (prop-handler, boot-harden, gms, adb-disabler, rom-fingerprint) check parent toggle state; child switches disabled with banner when parent is OFF
-
-**i18n**
-- 70 new keys added to `string.json` (autopif, history descriptions, error strings, font toggles, keybox provider, boot hash placeholders)
-- All 4 translation files synced to 376 keys with machine translations
-- 87 previously-untranslated old keys translated across ar/es/ru/zh
-- `data-i18n` for boot hash placeholder, zero aria-label, font toggles
+- Dialog UIs (prop-handler, boot-harden, gms, adb-disabler, rom-fingerprint) check parent toggle state — child switches disabled with banner when parent is OFF
+- Feature names exposed in `conflict_status_json()` + shown in UI hint text
+- `exec()` bridge: added timeout, fixed exit code extraction from JSON responses
+- CI cleanup: removed Playwright e2e and coverage (trimmed ~50s per run), fixed shellcheck warnings
 
 **Fixed**
-- `keybox-ui.ts`: extra args removed from `runDevAction`/`runSimpleAction`
-- `tee-hash-ui.ts`: dead `cacheDir()` + unused `getModuleDir` import removed
-- `toggles.ts`: unused `ToggleDef` import removed
-- `autopif-ui.ts`: null check for dialog elements
-- `_conflict_registry()` fallback path broke when `$MODDIR` unset (web bridge context), BRENE never appeared in conflict section
+- `_conflict_registry()` fallback path broke when `$MODDIR` unset in web bridge — BRENE never appeared in conflict section
 - Passive module conflict choices overwritten every boot (user selection wiped on reboot)
-
-**Removed**
-- Zygisk Next auto-download & install from customize.sh
-- English-only copies from translation files (fallback from string.json)
+- sha256sum mock recursion in tests (hung for 18s on CI)
 
 # v1.4.4.13
 
