@@ -72,7 +72,7 @@ if [ -f "$KEYBOX_FILE" ]; then
           _text=$(echo "$_entry" | grep -o '"text":"[^"]*"' | head -1 | sed 's/"text":"//;s/"//')
           [ -z "$_source" ] && _source="unknown"
           [ -z "$_source_version" ] && _source_version="?"
-          [ -z "$_text" ] && _text=""
+          [ -z "$_text" ] && _text="$_source_version"
 
           _softbanned=false
           echo "$_entry" | grep -q '"softbanned":true' 2>/dev/null && _softbanned=true

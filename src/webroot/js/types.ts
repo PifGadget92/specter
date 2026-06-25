@@ -79,6 +79,7 @@ export interface CatalogJson {
   entries: CatalogEntry[];
   latest: Record<string, string>;
   working: { source: string; version: string };
+  workingEntries: { source: string; version: string; text: string }[];
 }
 
 export interface ScriptResult {

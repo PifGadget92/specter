@@ -107,6 +107,29 @@ resolve_conflicts() {
   ensure_dir "$SPECTER_DIR"
   touch "$CONFLICT_BACKUP_FILE" 2>/dev/null || true
 
+  # Clean up stale configs for modules that are no longer present
+  while IFS='|' read -r _rc_id _rc_name _rc_scripts _rc_features _rc_type; do
+    [ -z "$_rc_id" ] && continue
+    _conflict_detect "$_rc_id" && continue
+    [ -f "$CONFIG_DIR/conflict_$_rc_id.val" ] || continue
+    rm -f "$CONFIG_DIR/conflict_$_rc_id.val" 2>/dev/null || true
+    log "CONFLICT" "$_rc_name: no longer detected, cleaned up stale config"
+    _rc_old_ifs="$IFS"
+    IFS=','
+    for _rc_script in $_rc_scripts; do
+      [ -z "$_rc_script" ] && continue
+      sed -i "\|^${_rc_script}$|d" "$CONFLICT_BACKUP_FILE" 2>/dev/null || true
+    done
+    for _rc_feature in $_rc_features; do
+      [ -z "$_rc_feature" ] && continue
+      _rc_toggle_key="$(_conflict_toggle_key "$_rc_feature")"
+      rm -f "$CONFIG_DIR/$_rc_toggle_key.val" 2>/dev/null || true
+    done
+    IFS="$_rc_old_ifs"
+  done <<EOF
+$(_conflict_registry)
+EOF
+
   while IFS='|' read -r _rc_id _rc_name _rc_scripts _rc_features _rc_type; do
     [ -z "$_rc_id" ] && continue
     _conflict_detect "$_rc_id" || continue
@@ -130,7 +153,6 @@ resolve_conflicts() {
           cfg_set "conflict_$_rc_id" "priority_module"
           log "CONFLICT" "$_rc_name: partial overlap, defaulting to Module priority"
         fi
-        # Sync claimed features to toggles (only set default, don't overwrite user)
         _rc_old_ifs="$IFS"
         IFS=','
         for _rc_feature in $_rc_features; do
