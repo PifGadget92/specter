@@ -6,6 +6,8 @@
 - Conflict entries for TA_utl / TA_enhanced
 
 **Changed**
+- Monet preset matching: HSL → HCT (CAM16) via Google's `@material/material-color-utilities` for accurate color theme selection from wallpaper
+- `presets.json` regenerated with correct Google MD3 colors via `SchemeTonalSpot` (was stale/wrong library version)
 - Zygisk Next: dropped `zygiskd` dep, validates module name, writes config files directly
 - Monet seed: in-memory cache, re-extracts on System chip click
 - ADB disabler: simplified USB config, added dev settings prop
