@@ -2,8 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/config_env.sh"
-. "$MODDIR/../lib/paths.sh"
+. "$MODDIR/../lib/constants.sh"
 
 ZN_DATA_DIR="/data/adb/zygisksu"
 ZN_MODULE_DIR="$MODULES_BASE/zygisksu"

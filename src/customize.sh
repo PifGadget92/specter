@@ -2,8 +2,6 @@
 # shellcheck disable=SC2034
 MODDIR="$MODPATH"
 . "$MODPATH/lib/common.sh"
-. "$MODPATH/lib/config_env.sh"
-. "$MODPATH/lib/urls.sh"
 
 # Clean up old uppercase paths (module id + data dir)
 rm -rf /data/adb/modules/Specter /data/adb/Specter
@@ -82,6 +80,7 @@ mkdir -p "$SPECTER_DIR"
 echo "1" > "$SPECTER_DIR/tee_reported"
 echo "1" > "$SPECTER_DIR/rom_spoof_reported"
 echo "1" > "$SPECTER_DIR/pif_reported"
+rm -f "$SPECTER_DIR/tee_status" "$SPECTER_DIR/tee_hash" "$SPECTER_DIR/tee_tier" 2>/dev/null || true
 unset _pif_name
 
 # Ensure backup dir exists for first-boot snapshot

@@ -2,8 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/config_env.sh"
-. "$MODDIR/../lib/paths.sh"
+. "$MODDIR/../lib/constants.sh"
 
 log_i "PROPS" "Starting boot-time property hardening"
 

@@ -2,9 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/config_env.sh"
-. "$MODDIR/../lib/paths.sh"
-. "$MODDIR/../lib/urls.sh"
+. "$MODDIR/../lib/constants.sh"
 WDIR="/data/local/tmp"
 _attestation_raw="$WDIR/attestation_raw.$$"
 _attestation_file="$WDIR/attestation.$$"

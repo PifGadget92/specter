@@ -2,8 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
-. "$MODDIR/../lib/config_env.sh"
+. "$MODDIR/../lib/constants.sh"
 
 case "${1:-}" in
   --fetch)
@@ -46,10 +45,8 @@ else
 fi
 unset _patch
 
-log_i "SECURITY_PATCH" "Writing $patch_date to $SECURITY_PATCH_FILE"
-
-cat > "$SECURITY_PATCH_FILE" <<EOF || die "Failed to write $SECURITY_PATCH_FILE"
-all=${patch_date}
-EOF
-log_i "SECURITY_PATCH" "Patch date written to $SECURITY_PATCH_FILE"
+{
+  echo "all=${patch_date}"
+} > "$SECURITY_PATCH_FILE" || die "Failed to write $SECURITY_PATCH_FILE"
+log_i "SECURITY_PATCH" "The security patch is written"
 exit 0

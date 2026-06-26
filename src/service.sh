@@ -2,8 +2,6 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/lib/common.sh"
-. "$MODDIR/lib/package_list.sh"
-. "$MODDIR/lib/config_env.sh"
 export ROOT_SOL
 
 BOOT_LOG="$SPECTER_DIR/log/boot.log"

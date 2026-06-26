@@ -2,8 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
-. "$MODDIR/../lib/config_env.sh"
+. "$MODDIR/../lib/constants.sh"
 
 log_i "ADB" "Disabling USB debugging and developer options"
 

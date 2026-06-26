@@ -2,11 +2,10 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/package_list.sh"
-. "$MODDIR/../lib/config_env.sh"
+. "$MODDIR/../lib/constants.sh"
 . "$MODDIR/../lib/target_common.sh"
 
-log_i "TARGET" "Starting target management"
+log_d "TARGET" "Starting target management"
 
 [ -d "$TRICKY_DIR" ] || die "Tricky Store data directory not found"
 

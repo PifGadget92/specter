@@ -2,8 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
-. "$MODDIR/../lib/urls.sh"
+. "$MODDIR/../lib/constants.sh"
 
 log_i "KEYBOX_INFO" "Starting keybox info check"
 
@@ -106,6 +105,17 @@ cat <<EOF > "$INFO_PATH"
 }
 EOF
 
+if [ "$_installed" = "true" ]; then
+  if [ "$_revoked" = "true" ]; then
+    log_w "KEYBOX_INFO" "Keybox is revoked by Google"
+  elif [ "$_up_to_date" = "true" ]; then
+    log_i "KEYBOX_INFO" "Keybox from $_source is valid and up to date"
+  elif [ -n "$_source" ]; then
+    log_i "KEYBOX_INFO" "Keybox from $_source: version $_source_version"
+  else
+    log_i "KEYBOX_INFO" "Keybox is installed"
+  fi
+fi
 unset _installed _source _source_version _text _up_to_date _revoked _softbanned _serial _serial_dec _history_json _entry _provider _latest_for_source _is_private_val
 log_i "KEYBOX_INFO" "Keybox info check complete"
 exit 0

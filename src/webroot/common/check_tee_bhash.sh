@@ -2,7 +2,7 @@
 MODULE_ROOT="${0%/*}"
 MODULE_ROOT="${MODULE_ROOT%/webroot/common}"
 . "$MODULE_ROOT/lib/vbmeta.sh"
-. "$MODULE_ROOT/lib/paths.sh"
+. "$MODULE_ROOT/lib/constants.sh"
 
 TEMP_DIR="/data/local/tmp/.specter_tee_check"
 rm -rf "$TEMP_DIR" && mkdir -p "$TEMP_DIR"

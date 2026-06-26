@@ -2,9 +2,9 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/urls.sh"
+. "$MODDIR/../lib/constants.sh"
 
-log_i "KEYBOX" "Starting keybox fetch/install"
+log_d "KEYBOX" "Starting keybox fetch/install"
 
 check_network || { log_e "KEYBOX" "No internet connection"; exit 1; }
 
@@ -163,7 +163,7 @@ else
 fi
 
 _install_teesimulator() {
-  log_i "KEYBOX" "TEE Simulator detected, generating locked.xml format"
+  log_d "KEYBOX" "TEE Simulator detected, generating locked.xml format"
 
   _serial=$(decode_keybox_serial "$DECODE_FILE" 2>/dev/null || echo "unknown")
   _random=$(hexdump -n 4 -e '4/4 "%08X"' /dev/urandom 2>/dev/null || echo "$$")
@@ -177,17 +177,15 @@ _install_teesimulator() {
   fi
 
   if [ -z "$_ecdsa_block" ]; then
-    log_w "KEYBOX" "TEE Simulator requires ECDSA key, writing dummy locked.xml"
+    log_d "KEYBOX" "No ECDSA key — writing placeholder locked.xml"
     {
       echo '<?xml version="1.0" encoding="UTF-8"?>'
       echo '<AndroidAttestation>'
       echo '<NumberOfKeyboxes>1</NumberOfKeyboxes>'
       echo '<Keybox>'
-      echo '# No valid ECDSA key available, locked.xml placeholder'
       echo '</Keybox>'
       echo '</AndroidAttestation>'
     } > "$LOCKED_FILE"
-    log_w "KEYBOX" "Dummy locked.xml written to $LOCKED_FILE"
     return
   fi
 
@@ -202,7 +200,7 @@ _install_teesimulator() {
     echo '</Keybox>'
     echo '</AndroidAttestation>'
   } > "$LOCKED_FILE"
-  log_i "KEYBOX" "Locked XML written to $LOCKED_FILE"
+  log_d "KEYBOX" "Locked XML written to $LOCKED_FILE"
 
   unset _serial _random _ecdsa_block _rsa_block
 }

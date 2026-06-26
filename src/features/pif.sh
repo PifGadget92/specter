@@ -20,10 +20,16 @@ log_i "PIF" "Detected: $_NAME"
 case "$_NAME" in
   *INJECT*)
     sh "$PIF_DIR/autopif_ota.sh" 2>/dev/null || true
-    sh "$PIF_DIR/autopif.sh" || log_w "PIF" "autopif.sh failed"
+    _pif_out=$(sh "$PIF_DIR/autopif.sh" 2>/dev/null) || log_w "PIF" "autopif.sh failed"
+    _pif_model=$(echo "$_pif_out" | grep '^MODEL=' | head -1 | sed 's/^MODEL=//')
+    [ -n "$_pif_model" ] && log_i "PIF" "Selected Device: $_pif_model"
+    unset _pif_out _pif_model
     ;;
   *Fork*)
-    sh "$PIF_DIR/autopif4.sh" -m || log_w "PIF" "autopif4.sh failed"
+    _pif_out=$(sh "$PIF_DIR/autopif4.sh" -m 2>/dev/null) || log_w "PIF" "autopif4.sh failed"
+    _pif_model=$(echo "$_pif_out" | grep '^MODEL=' | head -1 | sed 's/^MODEL=//')
+    [ -n "$_pif_model" ] && log_i "PIF" "Selected Device: $_pif_model"
+    unset _pif_out _pif_model
     ;;
   *)
     log_e "PIF" "Unknown module '$_NAME', can't update"
@@ -33,5 +39,5 @@ case "$_NAME" in
 esac
 
 unset _NAME
-log_i "PIF" "PIF fingerprint update complete"
+log_i "PIF" "PIF fingerprint updating complete"
 exit 0

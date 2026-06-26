@@ -2,8 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/urls.sh"
-. "$MODDIR/../lib/config_env.sh"
+. "$MODDIR/../lib/constants.sh"
 
 log_i "FIRST_BOOT" "Starting first-boot setup"
 

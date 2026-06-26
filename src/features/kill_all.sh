@@ -2,9 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/config_env.sh"
-. "$MODDIR/../lib/paths.sh"
-. "$MODDIR/../lib/package_list.sh"
+. "$MODDIR/../lib/constants.sh"
 
 log_i "KILL_ALL" "Starting GMS kill-all"
 

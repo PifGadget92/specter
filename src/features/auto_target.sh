@@ -2,9 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/paths.sh"
-. "$MODDIR/../lib/package_list.sh"
-. "$MODDIR/../lib/config_env.sh"
+. "$MODDIR/../lib/constants.sh"
 
 BLACKLIST="$SPECTER_DIR/blacklist.txt"
 BLACKLIST_ENABLED="$SPECTER_DIR/blacklist_enabled"

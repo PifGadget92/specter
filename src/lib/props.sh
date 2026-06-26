@@ -85,7 +85,7 @@ spoof_build_props() {
   case "$_fb_flavor" in
     *userdebug*) sp_try "ro.build.flavor" "${_fb_flavor%userdebug}user" ;;
     *eng*)       sp_try "ro.build.flavor" "${_fb_flavor%eng}user" ;;
-    *)           log_i "PROPS" "ro.build.flavor: $_fb_flavor — already release" ;;
+    *)           log_i "PROPS" "ro.build.flavor: $_fb_flavor, already release" ;;
   esac
   unset _fb_flavor
 }

@@ -2,8 +2,7 @@
 set -e
 MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
-. "$MODDIR/../lib/config_env.sh"
-. "$MODDIR/../lib/package_list.sh"
+. "$MODDIR/../lib/constants.sh"
 
 [ "$(cfg_get toggle_action_gms 1)" = "0" ] && exit 0
 
