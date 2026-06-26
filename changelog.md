@@ -4,6 +4,7 @@
 - Turkish + Polish translations; Crowdin CI + validation tests for i18n
 - Random selection from workingEntries for auto keybox
 - Conflict entries for TA_utl / TA_enhanced
+- Bundle inotifyd watcher for instant app detection (arm64/arm32/x86_64/x86)
 
 **Changed**
 - Monet preset matching: HSL → HCT (CAM16) via Google's `@material/material-color-utilities` for accurate color theme selection from wallpaper
@@ -13,6 +14,10 @@
 - ADB disabler: simplified USB config, added dev settings prop
 - History now stores exit code — failed scripts show correct description
 - Stale conflict configs cleaned up automatically
+- Deps restructured: `apk/` → `deps/apk/`, inotifyd source under `deps/inotifyd/`
+- cleanup.sh refactored; boot_state_props, debug, keybox improvements across all features
+- config_env debug logs redirected to stderr
+- auto_target cleans stale and blacklisted entries on each run
 
 **Fixed**
 - Hundreds of AI mistranslations in ar/es/ru/zh (TEE, ADB, PIF terms)
@@ -20,6 +25,7 @@
 - TEE button not updating cached files in device info
 - `check_tee_bhash.sh` missing paths.sh source
 - Stale translation keys removed, missing keys filled
+- TEE status shows Normal/Broken instead of raw boolean
 
 **Infrastructure**
 - Shell tests rewritten/expanded to 97 assertions
