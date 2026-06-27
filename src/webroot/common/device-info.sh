@@ -40,8 +40,10 @@ if [ -f "$TEE_TIER" ]; then
   _tee_tier=$(cat "$TEE_TIER" | tr -d ' \n')
 fi
 
-# PIF spoofed device, read from PIF config (support both .prop and .json)
+# Spoofed device: try PIF configs first, then TEE Simulator spoof_build_vars
 _pif_model=""
+_pif_manu=""
+_pif_modl=""
 for _pif_path in \
   "/data/adb/pif.prop" \
   "$MODULES_BASE/playintegrityfix/custom.pif.prop" \
@@ -61,9 +63,13 @@ do
       _pif_modl=$(grep -o '"MODEL"[[:space:]]*:[[:space:]]*"[^"]*"' "$_pif_path" 2>/dev/null | sed 's/.*"MODEL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
       ;;
   esac
-  if [ -n "$_pif_manu" ] || [ -n "$_pif_modl" ]; then break; fi
+  [ -n "$_pif_manu" ] || [ -n "$_pif_modl" ] && break
 done
 unset _pif_path
+if [ -z "$_pif_manu" ] && [ -z "$_pif_modl" ] && [ -f "$TRICKY_DIR/spoof_build_vars" ]; then
+  _pif_manu=$(grep '^MANUFACTURER=' "$TRICKY_DIR/spoof_build_vars" 2>/dev/null | cut -d= -f2)
+  _pif_modl=$(grep '^MODEL=' "$TRICKY_DIR/spoof_build_vars" 2>/dev/null | cut -d= -f2)
+fi
 if [ -n "$_pif_manu" ] && [ -n "$_pif_modl" ]; then
   _pif_model="${_pif_manu} ${_pif_modl}"
 elif [ -n "$_pif_modl" ]; then
