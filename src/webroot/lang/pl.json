@@ -257,8 +257,6 @@
   "gms_clear_data_desc": "Uruchamia pm clear dla Play Store",
   "control_toggle_action_keybox": "Instaluj Keybox",
   "control_toggle_action_keybox_desc": "Pobierz i zainstaluj valid keybox z katalogu",
-  "control_toggle_vbmeta": "Integracja VBMeta",
-  "control_toggle_vbmeta_desc": "Stosuj właściwości VBMeta (digest, wersja, algorytm hash) przy boocie",
   "control_toggle_prop_handler": "Boot State Props",
   "control_toggle_prop_handler_desc": "Boot state props, spoofowanie builda i czyszczenie podejrzanych propsów",
   "auto_target_title": "Auto-targetowanie",

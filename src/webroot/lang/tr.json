@@ -257,8 +257,6 @@
   "gms_clear_data_desc": "Play Store için pm clear komutunu uygular",
   "control_toggle_action_keybox": "Keybox Yükle",
   "control_toggle_action_keybox_desc": "Katalogdan geçerli keybox indirip yükler",
-  "control_toggle_vbmeta": "VBMeta Entegrasyonu",
-  "control_toggle_vbmeta_desc": "Başlangıçta AVB vbmeta değerlerini (digest, versiyon, hash algoritması) ayarlar",
   "control_toggle_prop_handler": "Başlangıç Propları",
   "control_toggle_prop_handler_desc": "Başlangıç propları, yapım kandırma, ve şüpheli propları temizler",
   "auto_target_title": "Otomatik Hedefleme",

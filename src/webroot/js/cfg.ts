@@ -9,8 +9,16 @@ export function setDataDir(path: string) { DATA_DIR = path; }
 
 /** Pre-populate the config cache by reading all `.val` files from the config directory. */
 export async function cfgInit() {
+  const preloaded = (window as any).__preloadedCfg;
+  if (preloaded && typeof preloaded === 'object') {
+    const entries = Object.entries(preloaded);
+    for (const [key, val] of entries) {
+      if (typeof val === 'string') cache[key] = val;
+    }
+    return;
+  }
   if (!DATA_DIR) return;
-  const cfgDir = shellEscape(DATA_DIR + '/config');
+  const cfgDir = shellEscape(DATA_DIR + '/config/val');
   const cmd = `for f in ${cfgDir}/*.val; do [ -f "\$f" ] || continue; k="\${f##*/}"; k="\${k%.val}"; v="\$(cat "\$f")"; [ -n "\$v" ] || continue; printf 'CFG:%s\n' "\$k"; printf '%s\n' "\$v"; done`;
   const result = await bridgeExec(cmd);
   const stdout = (result.stdout || '').trim();
@@ -30,7 +38,7 @@ export async function cfgInit() {
 async function readConfig(key: string): Promise<string | null> {
   if (!DATA_DIR) return null;
   const result = await bridgeExec(
-    `cat ${shellEscape(DATA_DIR + '/config/' + key + '.val')} 2>/dev/null || true`
+    `cat ${shellEscape(DATA_DIR + '/config/val/' + key + '.val')} 2>/dev/null || true`
   );
   return (result.stdout || '').trim() || null;
 }
@@ -38,7 +46,7 @@ async function readConfig(key: string): Promise<string | null> {
 function writeConfig(key: string, val: string | undefined | null) {
   if (!DATA_DIR) return Promise.resolve();
   const cmd =
-    `mkdir -p ${shellEscape(DATA_DIR + '/config')} && printf '%s' ${shellEscape(val || '')} > ${shellEscape(DATA_DIR + '/config/' + key + '.val')}`;
+    `mkdir -p ${shellEscape(DATA_DIR + '/config/val')} && printf '%s' ${shellEscape(val || '')} > ${shellEscape(DATA_DIR + '/config/val/' + key + '.val')}`;
   return bridgeExec(cmd).catch((err: any) => console.warn('Config write failed for', key, err));
 }
 
@@ -53,6 +61,7 @@ export async function cfgGet(key: string, defaultValue?: string): Promise<string
 /** Set a config value both in cache and on disk. */
 export function cfgSet(key: string, val: string | undefined | null) {
   cache[key] = val;
+  try { localStorage.setItem('sp_cfg_' + key, val ?? ''); } catch {}
   writeConfig(key, val);
 }
 

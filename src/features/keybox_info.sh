@@ -24,7 +24,7 @@ _is_private_val="false"
 if [ -f "$KEYBOX_FILE" ]; then
   _installed=true
 
-  _is_private_val=$(cat "$CONFIG_DIR/kb_private.val" 2>/dev/null || echo "false")
+  _is_private_val=$(cat "$CONFIG_DIR/val/keybox_private.val" 2>/dev/null || echo "false")
   [ -z "$_is_private_val" ] && _is_private_val="false"
   if [ "$_is_private_val" = "true" ]; then
     _source="Private"
@@ -51,7 +51,7 @@ if [ -f "$KEYBOX_FILE" ]; then
       _history_json=$(download "$CATALOG_URL" 2>/dev/null)
       if [ -n "$_history_json" ]; then
         log_d "KEYBOX_INFO" "Catalog response length: ${#_history_json}"
-        _provider=$(cat "$CONFIG_DIR/kb_provider.val" 2>/dev/null || echo "auto")
+        _provider=$(cat "$CONFIG_DIR/val/keybox_provider.val" 2>/dev/null || echo "auto")
         if [ "$_provider" = "auto" ]; then
           _provider=$(echo "$_history_json" | grep -o '"working":{[^}]*"source":"[^"]*"' | sed 's/.*"source":"\([^"]*\)".*/\1/')
         fi

@@ -257,8 +257,6 @@
   "gms_clear_data_desc": "Run pm clear on Play Store to reset its state",
   "control_toggle_action_keybox": "Install Keybox",
   "control_toggle_action_keybox_desc": "Download and install a valid keybox from the catalog",
-  "control_toggle_vbmeta": "VBMeta Integration",
-  "control_toggle_vbmeta_desc": "Apply AVB vbmeta properties (digest, version, hash algorithm) at boot",
   "control_toggle_prop_handler": "Boot Spoofing",
   "control_toggle_prop_handler_desc": "Spoof bootloader state, verified boot, and clean suspicious persistent props",
   "auto_target_title": "Auto Targeting",

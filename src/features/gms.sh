@@ -6,8 +6,8 @@ MODDIR=${0%/*}
 
 [ "$(cfg_get toggle_action_gms 1)" = "0" ] && exit 0
 
-_force_stop=$(cfg_get action_gms_force_stop 1)
-_clear_data=$(cfg_get action_gms_clear_data 1)
+_force_stop=$(cfg_get toggle_action_gms_force_stop 1)
+_clear_data=$(cfg_get toggle_action_gms_clear_data 1)
 
 [ "$_force_stop$_clear_data" = "00" ] && exit 0
 

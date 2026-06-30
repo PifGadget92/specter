@@ -13,7 +13,7 @@ bootstrap() {
   BIN_DIR="$TEST_ROOT/bin"; CONFIG_DIR="$TEST_ROOT/config"
   SPECTER_DIR="$TEST_ROOT/specter"; TRICKY_DIR="$TEST_ROOT/tricky_store"
   MODDIR="$TEST_ROOT"
-  mkdir -p "$PROPS_DIR" "$LOGS_DIR" "$BIN_DIR" "$CONFIG_DIR" "$SPECTER_DIR" "$TRICKY_DIR"
+  mkdir -p "$PROPS_DIR" "$LOGS_DIR" "$BIN_DIR" "$CONFIG_DIR/val" "$SPECTER_DIR" "$TRICKY_DIR"
   export MOCK_DIR PROPS_DIR LOGS_DIR BIN_DIR CONFIG_DIR SPECTER_DIR TRICKY_DIR MODDIR
 
   cat > "$BIN_DIR/resetprop" << 'MOCK'
@@ -94,7 +94,7 @@ source_feature() {
   PATH="$BIN_DIR:/usr/bin:/bin" MODDIR="$TEST_ROOT" SPECTER_DIR="$SPECTER_DIR" CONFIG_DIR="$CONFIG_DIR" . "$REPO_ROOT/src/features/$1" 2>/dev/null || true
 }
 
-set_cfg() { printf '%s' "$2" > "$CONFIG_DIR/$1.val"; }
+set_cfg() { mkdir -p "$CONFIG_DIR/val" && printf '%s' "$2" > "$CONFIG_DIR/val/$1.val"; }
 set_prop() { printf '%s' "$2" > "$PROPS_DIR/$1"; }
 get_log() { [ -f "$LOGS_DIR/${1:-resetprop}.log" ] && tail -"${2:-999}" "$LOGS_DIR/$1"; }
 prop_was_set() { [ -f "$PROPS_DIR/$1" ] && [ -n "$(cat "$PROPS_DIR/$1")" ]; }

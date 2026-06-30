@@ -260,8 +260,6 @@
   "gms_clear_data_desc": "在 Play 商店上运行 pm clear 以重置其状态",
   "control_toggle_action_keybox": "安装 Keybox",
   "control_toggle_action_keybox_desc": "从目录下载并安装有效的 keybox",
-  "control_toggle_vbmeta": "VBMeta 集成",
-  "control_toggle_vbmeta_desc": "在启动时应用 AVB vbmeta 属性（摘要、版本、哈希算法）",
   "control_toggle_prop_handler": "启动状态属性",
   "control_toggle_prop_handler_desc": "启动状态属性、Build 伪装、可疑属性清理",
   "auto_target_title": "自动添加目标",

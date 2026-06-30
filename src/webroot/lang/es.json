@@ -260,8 +260,6 @@
   "gms_clear_data_desc": "Ejecute pm clear en Play Store para restablecer su estado",
   "control_toggle_action_keybox": "Instalar keybox",
   "control_toggle_action_keybox_desc": "Descarga e instala un keybox válido del catálogo",
-  "control_toggle_vbmeta": "Integración VBMeta",
-  "control_toggle_vbmeta_desc": "Aplicar propiedades AVB vbmeta (resumen, versión, algoritmo hash) al inicio",
   "control_toggle_prop_handler": "Propiedades de estado de inicio",
   "control_toggle_prop_handler_desc": "Props de estado de arranque, spoofing de compilación y limpieza de props sospechosas",
   "auto_target_title": "Orientación automática",

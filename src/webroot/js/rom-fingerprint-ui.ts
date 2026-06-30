@@ -9,10 +9,10 @@ export function openRomFingerprintDialog() {
 
   cfgGet('toggle_rom_fingerprint', '1').then(parent => {
     const enabled = parent !== '0';
-    cfgGet('rom_fingerprint_hexpatch', '1').then(hex => {
-      cfgGet('rom_fingerprint_prefix', '1').then(pref => {
-        cfgGet('rom_fingerprint_pif', '1').then(pif => {
-        cfgGet('spoof_build_props', '1').then(spoof => {
+    cfgGet('toggle_rom_fingerprint_names', '1').then(hex => {
+      cfgGet('toggle_rom_fingerprint_prefix', '1').then(pref => {
+        cfgGet('toggle_rom_fingerprint_pif', '1').then(pif => {
+        cfgGet('toggle_rom_fingerprint_build_type', '1').then(spoof => {
         const banner = enabled ? '' : `<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--md-sys-color-surface-variant);border-radius:12px;margin:0 0 12px 0;color:var(--md-sys-color-on-surface-variant);font-size:0.875rem;"><md-icon>info</md-icon><span>${t('feature_disabled_desc', 'Feature is disabled, enable it in Control to configure')}</span></div>`;
         dialog.innerHTML = `
         <div slot="headline">
@@ -87,10 +87,10 @@ export function openRomFingerprintDialog() {
           const p = dialog.querySelector('#rf-prefix') as MdSwitch;
           const pif = dialog.querySelector('#rf-pif') as MdSwitch;
           const sp = dialog.querySelector('#rf-spoof') as MdSwitch;
-          cfgSet('rom_fingerprint_hexpatch', h.selected ? '1' : '0');
-          cfgSet('rom_fingerprint_prefix', p.selected ? '1' : '0');
-          cfgSet('rom_fingerprint_pif', pif.selected ? '1' : '0');
-          cfgSet('spoof_build_props', sp.selected ? '1' : '0');
+          cfgSet('toggle_rom_fingerprint_names', h.selected ? '1' : '0');
+          cfgSet('toggle_rom_fingerprint_prefix', p.selected ? '1' : '0');
+          cfgSet('toggle_rom_fingerprint_pif', pif.selected ? '1' : '0');
+          cfgSet('toggle_rom_fingerprint_build_type', sp.selected ? '1' : '0');
           showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
           dialog.close();
         } catch (e) {

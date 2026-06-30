@@ -39,7 +39,7 @@ if [ "$(cfg_get toggle_auto_target 1)" = "1" ] && [ "$(cfg_get auto_target_metho
 #!/system/bin/sh
 MODDIR='${MODDIR}'
 SPECTER_DIR='${SPECTER_DIR}'
-_cg_val="\$(su -c "cat \${SPECTER_DIR}/config/toggle_auto_target.val" 2>/dev/null)"
+_cg_val="\$(su -c "cat \${SPECTER_DIR}/config/val/toggle_auto_target.val" 2>/dev/null)"
 [ "\${_cg_val:-1}" = "1" ] || exit 0
 su -c "sh \${MODDIR}/features/auto_target.sh" 2>/dev/null || true
 . "\${MODDIR}/lib/constants.sh" 2>/dev/null
@@ -51,6 +51,12 @@ EOF
     log_i "SCHED" "inotifyd launched for /data/app"
   fi
   unset _inotify_bin
+fi
+
+# Launch inotifyd for wallpaper changes — calls monet.sh (writes monet.json for WebUI)
+if [ -x "$MODDIR/deps/inotifyd" ] && [ -f "$MODDIR/features/monet.sh" ]; then
+  "$MODDIR/deps/inotifyd" -m 8 /data/system/users/0/wallpaper "$MODDIR/features/monet.sh" >/dev/null 2>&1 &
+  log_i "SCHED" "inotifyd launched for wallpaper → monet.sh"
 fi
 
 while true; do

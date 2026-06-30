@@ -4,11 +4,13 @@ MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
 . "$MODDIR/../lib/constants.sh"
 
+[ "$(cfg_get toggle_prop_handler 1)" = "0" ] && exit 0
+
 log_i "PROPS" "Starting boot-time property hardening"
 
 # --- Conditional toggles ---
-_do_bootprops=$(cfg_get boot_state_props 1)
-_do_bootmode=$(cfg_get bootmode_spoof 1)
+_do_bootprops=$(cfg_get toggle_boot_state_props 1)
+_do_bootmode=$(cfg_get toggle_bootmode_spoof 1)
 _do_persist_scan=1  # always check persistent props
 
 # --- 1. Boot property overrides (formerly inline in service.sh) ---

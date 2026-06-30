@@ -260,8 +260,6 @@
   "gms_clear_data_desc": "قم بتشغيل PM Clear على متجر Play لإعادة ضبط حالته",
   "control_toggle_action_keybox": "تثبيت Keybox",
   "control_toggle_action_keybox_desc": "تنزيل وتثبيت keybox صالح من الكتالوج",
-  "control_toggle_vbmeta": "تكامل VBMeta",
-  "control_toggle_vbmeta_desc": "تطبيق خصائص AVB vbmeta (الملخص، الإصدار، خوارزمية التجزئة) عند الإقلاع",
   "control_toggle_prop_handler": "حالة خصائص الإقلاع",
   "control_toggle_prop_handler_desc": "خصائص حالة الإقلاع وانتحال البناء وتنظيف الخصائص المشبوهة",
   "auto_target_title": "الاستهداف التلقائي",

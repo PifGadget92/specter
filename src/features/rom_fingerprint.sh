@@ -6,10 +6,10 @@ MODDIR=${0%/*}
 
 [ "$(cfg_get toggle_rom_fingerprint 1)" = "0" ] && exit 0
 
-_rf_hexpatch=$(cfg_get rom_fingerprint_hexpatch 1)
-_rf_prefix=$(cfg_get rom_fingerprint_prefix 1)
-_rf_pif=$(cfg_get rom_fingerprint_pif 1)
-_rf_spoof=$(cfg_get spoof_build_props 1)
+_rf_hexpatch=$(cfg_get toggle_rom_fingerprint_names 1)
+_rf_prefix=$(cfg_get toggle_rom_fingerprint_prefix 1)
+_rf_pif=$(cfg_get toggle_rom_fingerprint_pif 1)
+_rf_spoof=$(cfg_get toggle_rom_fingerprint_build_type 1)
 
 [ "$_rf_hexpatch$_rf_prefix$_rf_pif$_rf_spoof" = "0000" ] && exit 0
 
@@ -57,18 +57,30 @@ if [ "$_rf_prefix" != "0" ]; then
   unset _rf_build_prop _rf_val _rf_new_val _rf_pref
 fi
 
-# LineageOS camera packagelist scrub
-_rf_cam=$(resetprop vendor.camera.aux.packagelist 2>/dev/null || echo "")
-case "$_rf_cam" in
-  *org.lineageos*) resetprop -n vendor.camera.aux.packagelist "com.android.camera" && _cleaned=$((_cleaned + 1)) && log_d "ROM_FP" "Scrubbed vendor.camera.aux.packagelist" ;;
-esac
-unset _rf_cam
+if [ "$_rf_hexpatch" != "0" ]; then
+  # LineageOS camera packagelist scrub
+  _rf_cam=$(resetprop vendor.camera.aux.packagelist 2>/dev/null || echo "")
+  case "$_rf_cam" in
+    *org.lineageos*) resetprop -n vendor.camera.aux.packagelist "com.android.camera" && _cleaned=$((_cleaned + 1)) && log_d "ROM_FP" "Scrubbed vendor.camera.aux.packagelist" ;;
+  esac
+  unset _rf_cam
 
-_rf_cam_priv=$(resetprop persist.vendor.camera.privapp.list 2>/dev/null || echo "")
-case "$_rf_cam_priv" in
-  *org.lineageos*) resetprop -n persist.vendor.camera.privapp.list "com.android.camera" && _cleaned=$((_cleaned + 1)) && log_d "ROM_FP" "Scrubbed persist.vendor.camera.privapp.list" ;;
-esac
-unset _rf_cam_priv
+  _rf_cam_priv=$(resetprop persist.vendor.camera.privapp.list 2>/dev/null || echo "")
+  case "$_rf_cam_priv" in
+    *org.lineageos*) resetprop -n persist.vendor.camera.privapp.list "com.android.camera" && _cleaned=$((_cleaned + 1)) && log_d "ROM_FP" "Scrubbed persist.vendor.camera.privapp.list" ;;
+  esac
+  unset _rf_cam_priv
+
+  # Kill vendor.lineage_health service
+  _rf_health=$(resetprop init.svc.vendor.lineage_health 2>/dev/null || echo "")
+  if [ -n "$_rf_health" ]; then
+    setprop ctl.stop vendor.lineage_health 2>/dev/null || true
+    resetprop -d init.svc.vendor.lineage_health 2>/dev/null || true
+    _cleaned=$((_cleaned + 1))
+    log_d "ROM_FP" "Stopped vendor.lineage_health"
+  fi
+  unset _rf_health
+fi
 
 # PIF props cleanup
 if [ "$_rf_pif" != "0" ]; then
@@ -80,16 +92,6 @@ if [ "$_rf_pif" != "0" ]; then
   done
   unset _rf_pif_props _rf_prop
 fi
-
-# Kill vendor.lineage_health service
-_rf_health=$(resetprop init.svc.vendor.lineage_health 2>/dev/null || echo "")
-if [ -n "$_rf_health" ]; then
-  setprop ctl.stop vendor.lineage_health 2>/dev/null || true
-  resetprop -d init.svc.vendor.lineage_health 2>/dev/null || true
-  _cleaned=$((_cleaned + 1))
-  log_d "ROM_FP" "Stopped vendor.lineage_health"
-fi
-unset _rf_health
 
 if [ "$_cleaned" -gt 0 ]; then
   log_i "ROM_FP" "Cleaned $_cleaned ROM-specific fingerprints"

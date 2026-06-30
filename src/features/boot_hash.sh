@@ -89,7 +89,7 @@ if [ -n "$_winner" ]; then
       fi
       ;;
   esac
-  apply_vbmeta_props
+  [ "$(cfg_get toggle_vbmeta_props 1)" != "0" ] && apply_vbmeta_props
   echo "$_winner" > "$_tee_bhash_file"
   log_i "BOOT_HASH" "Source: $_winner_src"
   log_i "BOOT_HASH" "Boot hash resolved"

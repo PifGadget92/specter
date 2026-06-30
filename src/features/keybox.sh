@@ -15,12 +15,12 @@ TEMP_FILE="/data/local/tmp/keybox.tmp.$$"
 trap 'rm -f "$DECODE_FILE" "$TEMP_FILE" 2>/dev/null' EXIT
 
 
-_custom_type=$(cat "$CONFIG_DIR/kb_custom_type.val" 2>/dev/null || echo "")
-_custom_value=$(cat "$CONFIG_DIR/kb_custom_value.val" 2>/dev/null || echo "")
+_custom_type=$(cat "$CONFIG_DIR/val/keybox_custom_type.val" 2>/dev/null || echo "")
+_custom_value=$(cat "$CONFIG_DIR/val/keybox_custom_value.val" 2>/dev/null || echo "")
 
 _clear_custom() {
-  printf '%s' "" > "$CONFIG_DIR/kb_custom_type.val" 2>/dev/null || true
-  printf '%s' "" > "$CONFIG_DIR/kb_custom_value.val" 2>/dev/null || true
+  printf '%s' "" > "$CONFIG_DIR/val/keybox_custom_type.val" 2>/dev/null || true
+  printf '%s' "" > "$CONFIG_DIR/val/keybox_custom_value.val" 2>/dev/null || true
 }
 
 if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
@@ -57,7 +57,7 @@ if decode_keybox_blob "$TEMP_FILE" "$DECODE_FILE" 2>/dev/null && [ -s "$DECODE_F
   esac
 fi
 
-_provider=$(cat "$CONFIG_DIR/kb_provider.val" 2>/dev/null || echo "auto")
+_provider=$(cat "$CONFIG_DIR/val/keybox_provider.val" 2>/dev/null || echo "auto")
 
 log_i "KEYBOX" "Fetching available keyboxes..."
 _history=$(download "$CATALOG_URL")
@@ -213,7 +213,7 @@ _install_teesimulator() {
 }
 
 _clear_keybox_id() {
-  printf '%s' "" > "$CONFIG_DIR/kb_private.val" 2>/dev/null || true
+  printf '%s' "" > "$CONFIG_DIR/val/keybox_private.val" 2>/dev/null || true
 }
 
 if _is_teesimulator; then

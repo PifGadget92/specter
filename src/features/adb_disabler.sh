@@ -4,6 +4,8 @@ MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
 . "$MODDIR/../lib/constants.sh"
 
+[ "$(cfg_get toggle_adb_disabler 1)" = "0" ] && exit 0
+
 log_i "ADB" "Disabling USB debugging and developer options"
 
 _dev_opt=$(cfg_get toggle_adb_disabler_dev_options 1)

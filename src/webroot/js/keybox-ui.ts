@@ -43,7 +43,7 @@ export async function populateProviders() {
 
   if (!providerSelects.has(select)) {
     providerSelects.add(select);
-    select.addEventListener('change', () => { cfgSet('kb_provider', select.value); });
+    select.addEventListener('change', () => { cfgSet('keybox_provider', select.value); });
   }
 
   const data = await fetchCatalog();
@@ -75,8 +75,8 @@ export function wireKeyboxInstallButton() {
     spinner?.classList.remove('hidden');
 
     try {
-      cfgSet('kb_custom_type', '');
-      cfgSet('kb_custom_value', '');
+      cfgSet('keybox_custom_type', '');
+      cfgSet('keybox_custom_value', '');
       await runAction('keybox.sh');
       const moddir = getModuleDir();
       if (moddir) {
@@ -165,9 +165,9 @@ export async function openCustomKeyboxDialog() {
   });
 
   clearBtn!.addEventListener('click', async () => {
-    cfgSet('kb_custom_type', '');
-    cfgSet('kb_custom_value', '');
-    cfgSet('kb_private', '');
+    cfgSet('keybox_custom_type', '');
+    cfgSet('keybox_custom_value', '');
+    cfgSet('keybox_private', '');
     showToast(t('custom_kb_cleared', 'Custom keybox cleared'), { icon: 'info', type: 'info', autoCloseDelay: 2500 });
     dialog.close();
   });
@@ -187,7 +187,7 @@ export async function openCustomKeyboxDialog() {
       pd.innerHTML = `
         <div slot="headline">${t('custom_kb_title', 'Custom Keybox')}</div>
         <div slot="content">
-          <p class="private-dialog-msg">${t('custom_kb_private_ask', 'Is this a private keybox?')}</p>
+          <p class="private-dialog-msg">${t('custom_keybox_private_ask', 'Is this a private keybox?')}</p>
         </div>
         <div slot="actions">
           <md-text-button id="kb-pri-no" value="no">${t('custom_kb_no', 'No')}</md-text-button>
@@ -202,16 +202,16 @@ export async function openCustomKeyboxDialog() {
     });
 
     if (privateChoice) {
-      cfgSet('kb_private', 'true');
+      cfgSet('keybox_private', 'true');
     } else {
-      cfgSet('kb_private', '');
+      cfgSet('keybox_private', '');
     }
     if (text.startsWith('http://') || text.startsWith('https://')) {
-      cfgSet('kb_custom_type', 'url');
+      cfgSet('keybox_custom_type', 'url');
     } else {
-      cfgSet('kb_custom_type', 'path');
+      cfgSet('keybox_custom_type', 'path');
     }
-    cfgSet('kb_custom_value', text);
+    cfgSet('keybox_custom_value', text);
     const result: any = await exec(`sh ${shellEscape(moddir + '/features/keybox.sh')}`);
     if (result.code === 0) {
       showToast(t('custom_kb_installed', 'Custom keybox installed'), { icon: 'check_circle', type: 'success', autoCloseDelay: 3000 });

@@ -9,8 +9,8 @@ export function openGmsDialog() {
 
   cfgGet('toggle_action_gms', '1').then(parent => {
     const enabled = parent !== '0';
-    cfgGet('action_gms_force_stop', '1').then(forceStop => {
-      cfgGet('action_gms_clear_data', '1').then(clearData => {
+    cfgGet('toggle_action_gms_force_stop', '1').then(forceStop => {
+      cfgGet('toggle_action_gms_clear_data', '1').then(clearData => {
         const banner = enabled ? '' : `<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--md-sys-color-surface-variant);border-radius:12px;margin:0 0 12px 0;color:var(--md-sys-color-on-surface-variant);font-size:0.875rem;"><md-icon>info</md-icon><span>${t('feature_disabled_desc', 'Feature is disabled, enable it in Control to configure')}</span></div>`;
         dialog.innerHTML = `
         <div slot="headline">
@@ -63,8 +63,8 @@ export function openGmsDialog() {
         try {
           const fs = dialog.querySelector('#gms-force-stop') as MdSwitch;
           const cd = dialog.querySelector('#gms-clear-data') as MdSwitch;
-          cfgSet('action_gms_force_stop', fs.selected ? '1' : '0');
-          cfgSet('action_gms_clear_data', cd.selected ? '1' : '0');
+          cfgSet('toggle_action_gms_force_stop', fs.selected ? '1' : '0');
+          cfgSet('toggle_action_gms_clear_data', cd.selected ? '1' : '0');
           showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
           dialog.close();
         } catch (e) {

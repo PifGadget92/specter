@@ -4,7 +4,7 @@ MODDIR=${0%/*}
 . "$MODDIR/../lib/common.sh"
 . "$MODDIR/../lib/constants.sh"
 
-[ "$(cfg_get toggle_crom_props 1)" = "0" ] && exit 0
+[ "$(cfg_get toggle_custom_rom_props 1)" = "0" ] && exit 0
 
 log_i "CROM_PROPS" "Cleaning custom ROM props"
 

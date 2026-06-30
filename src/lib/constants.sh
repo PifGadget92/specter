@@ -46,16 +46,18 @@ decode_substitution() {
 }
 
 # -- Config env --
+CONFIG_VAL_DIR="$CONFIG_DIR/val"
+
 cfg_get() {
   _cg_key="$1" _cg_default="$2"
-  _cg_val=$(cat "$CONFIG_DIR/$_cg_key.val" 2>/dev/null || true)
+  _cg_val=$(cat "$CONFIG_VAL_DIR/$_cg_key.val" 2>/dev/null || true)
   printf '%s' "${_cg_val:-$_cg_default}"
   unset _cg_key _cg_default _cg_val
 }
 
 cfg_set() {
-  mkdir -p "$CONFIG_DIR" 2>/dev/null
-  printf '%s' "$2" > "$CONFIG_DIR/$1.val"
+  mkdir -p "$CONFIG_VAL_DIR" 2>/dev/null
+  printf '%s' "$2" > "$CONFIG_VAL_DIR/$1.val"
 }
 
 # -- Utilities --

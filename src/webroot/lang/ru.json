@@ -263,8 +263,6 @@
   "gms_clear_data_desc": "Запустить pm clear в Play Store, чтобы сбросить его состояние.",
   "control_toggle_action_keybox": "Установить Keybox",
   "control_toggle_action_keybox_desc": "Загрузите и установите действующий keybox из каталога.",
-  "control_toggle_vbmeta": "VBMeta Интеграция",
-  "control_toggle_vbmeta_desc": "Применить AVB vbmeta свойства (дайджест, версия, хэш-алгоритм) при загрузке",
   "control_toggle_prop_handler": "Свойства состояния загрузки",
   "control_toggle_prop_handler_desc": "Сбросить свойства состояния загрузки (verifiedboot, flash.locked) при загрузке",
   "auto_target_title": "Автоматический таргетинг",

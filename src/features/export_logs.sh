@@ -59,7 +59,7 @@ echo "" >> "$OUTPUT_FILE"
 # Add module config summary
 log_i "EXPORT" "Adding config summary"
 echo "=== SPECTER CONFIG ===" >> "$OUTPUT_FILE"
-for _cfg_file in "$SPECTER_DIR"/config/*.val; do
+for _cfg_file in "$SPECTER_DIR"/config/val/*.val; do
   [ -f "$_cfg_file" ] || continue
   _cfg_name=$(basename "$_cfg_file" .val)
   _cfg_val=$(cat "$_cfg_file" 2>/dev/null || echo "")

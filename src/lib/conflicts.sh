@@ -32,7 +32,9 @@ _conflict_uninstall() {
 }
 
 _conflict_toggle_key() {
-  case "$1" in target|security_patch|gms|keybox|pif) printf 'toggle_action_%s' "$1" ;; *) printf 'toggle_%s' "$1" ;; esac
+  case "$1" in target|security_patch|gms|keybox|pif) printf 'toggle_action_%s' "$1" ;;
+    crom_props) printf 'toggle_custom_rom_props' ;;
+    *) printf 'toggle_%s' "$1" ;; esac
 }
 
 _feature_should_run() {
@@ -63,7 +65,7 @@ _resolve_moderate() {
 }
 
 _resolve_passive() {
-  if [ ! -f "$CONFIG_DIR/conflict_$1.val" ]; then
+  if [ ! -f "$CONFIG_DIR/val/conflict_$1.val" ]; then
     cfg_set "conflict_$1" "priority_module"
     log_i "CONFLICT" "$2: partial overlap, defaulting to Module priority"
   fi
@@ -76,8 +78,8 @@ resolve_conflicts() {
   while IFS='|' read -r _rc_id _rc_name _rc_type _rc_features _rc_scripts; do
     case "$_rc_id" in ''|\#*) continue ;; esac
     if ! _conflict_detect "$_rc_id"; then
-      [ -f "$CONFIG_DIR/conflict_$_rc_id.val" ] || continue
-      rm -f "$CONFIG_DIR/conflict_$_rc_id.val"
+      [ -f "$CONFIG_DIR/val/conflict_$_rc_id.val" ] || continue
+      rm -f "$CONFIG_DIR/val/conflict_$_rc_id.val"
       sed -i "\|/$_rc_id/|d" "$CONFLICT_BACKUP_FILE" 2>/dev/null || true
     fi
   done < "$CONFLICT_LIST"

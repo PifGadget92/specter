@@ -18,7 +18,7 @@ export function wireBootHash() {
     const cdir = configDir();
     if (!moddir || !cdir) return;
 
-    const hashPath = shellEscape(cdir + '/custom_boot_hash.val');
+    const hashPath = shellEscape(cdir + '/val/custom_boot_hash.val');
     const current = await exec(`cat ${hashPath} 2>/dev/null || echo ""`);
     const currentHash = (current.stdout || '').trim();
 
