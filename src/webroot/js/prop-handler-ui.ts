@@ -10,10 +10,9 @@ export function openPropHandlerDialog() {
   Promise.all([
     cfgGet('toggle_prop_handler', '1'),
     cfgGet('boot_state_props', '1'),
-    cfgGet('spoof_build_props', '1'),
-    cfgGet('region_props', '1'),
+    cfgGet('bootmode_spoof', '1'),
     cfgGet('toggle_boot_hash', '1'),
-  ]).then(([parent, state, spoof, region, bootHash]) => {
+  ]).then(([parent, state, bootmode, bootHash]) => {
     const enabled = parent !== '0';
     const banner = enabled ? '' : `<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--md-sys-color-surface-variant);border-radius:12px;margin:0 0 12px 0;color:var(--md-sys-color-on-surface-variant);font-size:0.875rem;"><md-icon>info</md-icon><span>${t('feature_disabled_desc', 'Feature is disabled, enable it in Control to configure')}</span></div>`;
     dialog.innerHTML = `
@@ -38,23 +37,13 @@ export function openPropHandlerDialog() {
           </div>
 
           <div class="list-item list-item--toggle">
-            <div class="li-icon"><md-icon aria-hidden="true">badge</md-icon></div>
+            <div class="li-icon"><md-icon aria-hidden="true">smartphone</md-icon></div>
             <div class="list-item-content">
-              <div class="toggle-text">${t('prop_handler_spoof_build', 'Spoof Build Props')}</div>
-              <span class="supporting-text">${t('prop_handler_spoof_build_desc', 'Spoof ro.build.flavor to remove userdebug/eng traces')}</span>
+              <div class="toggle-text">${t('prop_handler_bootmode', 'Spoof Bootmode')}</div>
+              <span class="supporting-text">${t('prop_handler_bootmode_desc', 'Spoof ro.bootmode to normal to hide recovery status')}</span>
             </div>
             <div class="spacer"></div>
-            <md-switch icons id="ph-spoof" ${spoof === '1' ? 'selected' : ''} ${enabled ? '' : 'disabled'}></md-switch>
-          </div>
-
-          <div class="list-item list-item--toggle">
-            <div class="li-icon"><md-icon aria-hidden="true">language</md-icon></div>
-            <div class="list-item-content">
-              <div class="toggle-text">${t('prop_handler_region', 'Region Props')}</div>
-              <span class="supporting-text">${t('prop_handler_region_desc', 'Apply region-specific persist props (IMS, VoLTE, locale)')}</span>
-            </div>
-            <div class="spacer"></div>
-            <md-switch icons id="ph-region" ${region === '1' ? 'selected' : ''} ${enabled ? '' : 'disabled'}></md-switch>
+            <md-switch icons id="ph-bootmode" ${bootmode === '1' ? 'selected' : ''} ${enabled ? '' : 'disabled'}></md-switch>
           </div>
 
           <div class="list-item list-item--toggle">
@@ -86,12 +75,10 @@ export function openPropHandlerDialog() {
       saveBtn.disabled = true;
       try {
         const s = dialog.querySelector('#ph-state') as MdSwitch;
-        const sp = dialog.querySelector('#ph-spoof') as MdSwitch;
-        const r = dialog.querySelector('#ph-region') as MdSwitch;
+        const bm = dialog.querySelector('#ph-bootmode') as MdSwitch;
         const bh = dialog.querySelector('#ph-boot-hash') as MdSwitch;
         cfgSet('boot_state_props', s.selected ? '1' : '0');
-        cfgSet('spoof_build_props', sp.selected ? '1' : '0');
-        cfgSet('region_props', r.selected ? '1' : '0');
+        cfgSet('bootmode_spoof', bm.selected ? '1' : '0');
         cfgSet('toggle_boot_hash', bh.selected ? '1' : '0');
         showToast(t('toast_success', 'Done'), { icon: 'check_circle', type: 'success', autoCloseDelay: 2500 });
         dialog.close();

@@ -67,7 +67,6 @@ describe('required files', () => {
     'lib/common.sh',
     'features/keybox.sh',
     'features/gms.sh',
-    'features/boot_hardening.sh',
     'features/boot_hash.sh',
     'features/adb_disabler.sh',
     'features/tee.sh',

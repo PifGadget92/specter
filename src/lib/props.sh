@@ -43,7 +43,7 @@ sp_persist() {
 }
 
 apply_vbmeta_props() {
-  resetprop ro.boot.vbmeta.avb_version >/dev/null 2>&1 || { resetprop -n ro.boot.vbmeta.avb_version "1.2" && log_i "PROPS" "ro.boot.vbmeta.avb_version → 1.2"; }
+  resetprop ro.boot.vbmeta.avb_version >/dev/null 2>&1 || { resetprop -n ro.boot.vbmeta.avb_version "1.3" && log_i "PROPS" "ro.boot.vbmeta.avb_version → 1.3"; }
   resetprop ro.boot.vbmeta.hash_alg >/dev/null 2>&1 || { resetprop -n ro.boot.vbmeta.hash_alg "sha256" && log_i "PROPS" "ro.boot.vbmeta.hash_alg → sha256"; }
   resetprop ro.boot.vbmeta.invalidate_on_error >/dev/null 2>&1 || { resetprop -n ro.boot.vbmeta.invalidate_on_error "yes" && log_i "PROPS" "ro.boot.vbmeta.invalidate_on_error → yes"; }
   resetprop ro.boot.vbmeta.size >/dev/null 2>&1 || { resetprop -n ro.boot.vbmeta.size "4096" && log_i "PROPS" "ro.boot.vbmeta.size → 4096"; }
@@ -51,7 +51,8 @@ apply_vbmeta_props() {
 
 apply_boot_props() {
   for _abp_prop in \
-    ro.build.selinux:1 ro.secure:1 ro.crypto.state:encrypted \
+    ro.build.selinux:1 ro.build.selinux.enforce:1 \
+    ro.secure:1 ro.crypto.state:encrypted \
     ro.hardware.virtual_device:0 ro.build.type:user ro.build.tags:release-keys \
     ro.boot.warranty_bit:0 ro.warranty_bit:0 ro.vendor.warranty_bit:0 ro.vendor.boot.warranty_bit:0 \
     ro.is_ever_orange:0 ro.secureboot.lockstate:locked \
@@ -60,7 +61,8 @@ apply_boot_props() {
     ro.boot.veritymode.managed:yes ro.boot.selinux:enforcing \
     vendor.boot.verifiedbootstate:green vendor.boot.vbmeta.device_state:locked \
     ro.boot.realmebootstate:green ro.boot.realme.lockstate:1 \
-    ro.kernel.qemu:0 ro.boot.qemu:0 \
+    ro.kernel.qemu: ro.boot.qemu:0 \
+    ro.bootimage.build.tags:release-keys \
     ro.system.build.tags:release-keys ro.vendor.build.tags:release-keys; do
     sp_try "${_abp_prop%%:*}" "${_abp_prop#*:}"
   done
@@ -77,6 +79,11 @@ apply_boot_props() {
     sp_try "$_abp_prop" "1"
   done
   unset _abp_prop
+
+  # Boot error prop cleanup
+  resetprop --delete "ro.boot.verifiedbooterror" 2>/dev/null || true
+  resetprop --delete "ro.boot.verifyerrorpart" 2>/dev/null || true
+  resetprop --delete "crashrecovery.rescue_boot_count" 2>/dev/null || true
 }
 
 spoof_build_props() {
@@ -88,89 +95,13 @@ spoof_build_props() {
     *)           log_i "PROPS" "ro.build.flavor: $_fb_flavor, already release" ;;
   esac
   unset _fb_flavor
-}
 
-block_rom_spoof_engines() {
-  _brs_gate=false
-  resetprop 2>/dev/null | grep -qE 'persist\.sys\.(entryhooks|pixelprops|pihooks)' && _brs_gate=true
-  [ -f "$GMS_PROPS_FILE" ] && _brs_gate=true
-  [ "$_brs_gate" = "false" ] && { log_i "PROPS" "No spoof engines detected"; unset _brs_gate; return 0; }
-  log_i "PROPS" "Blocking spoof engines"
-
-  while IFS='|' read -r _brs_prop _brs_val; do
-    sp_persist "$_brs_prop" "$_brs_val"
-  done << MAP
-persist.sys.entryhooks_enabled|false
-persist.sys.pixelprops.gms|false
-persist.sys.pixelprops.gapps|false
-persist.sys.pixelprops.google|false
-persist.sys.pixelprops.pi|false
-persist.sys.pihooks.disable.gms|true
-MAP
-  log_i "PROPS" "Blocked 6 spoof engine props"
-
-  if [ -f "$GMS_PROPS_FILE" ] && [ "$(resetprop persist.sys.spoof.gms 2>/dev/null)" != "false" ]; then
-    resetprop persist.sys.spoof.gms false 2>/dev/null || true
-    log_i "PROPS" "persist.sys.spoof.gms → false"
-  fi
-
-  while IFS= read -r _brs_prop; do
-    [ -z "$_brs_prop" ] && continue
-    _brs_orig=$(resetprop "$_brs_prop" 2>/dev/null || echo "")
-    if [ -n "$_brs_orig" ]; then
-      ensure_dir "$SPECTER_DIR"
-      if ! grep -qsF "|$_brs_prop|" "$PERSIST_RESTORE_FILE" 2>/dev/null; then
-        echo "restore|$_brs_prop|$_brs_orig" >> "$PERSIST_RESTORE_FILE" 2>/dev/null || true
-      fi
-      log_i "PROPS" "Deleted $_brs_prop (was: $_brs_orig)"
-    fi
-    resetprop -p --delete "$_brs_prop" 2>/dev/null || true
-  done << BRS_PROPS
-$(getprop 2>/dev/null | grep -E "(pixelprops|pihooks)" | sed "s/^\[\(.*\)\]:.*/\1/" || true)
-BRS_PROPS
-
-  unset _brs_gate _brs_prop _brs_val _brs_orig
-}
-
-detect_region() {
-_dr_locale=$(getprop ro.system.locale 2>/dev/null || getprop persist.sys.locale 2>/dev/null || getprop ro.product.locale 2>/dev/null)
-    _dr_locale=${_dr_locale:-en-US}
-    _dr_country=$(echo "$_dr_locale" | sed 's/.*-//;s/.*_//')
-  printf '%s' "$_dr_country" | tr '[:upper:]' '[:lower:]'
-  unset _dr_locale _dr_country
-}
-
-apply_region_props() {
-  _ar_region=$(detect_region)
-  log_i "PROPS" "Detected region: $_ar_region"
-  case "$_ar_region" in
-    cn)
-      for _p in "persist.radio.calls.on.ims:1" "persist.radio.jbims:1" "persist.radio.videocall.audio.output:1"; do
-        sp_try "${_p%%:*}" "${_p#*:}"
-      done
-      ;;
-    in)
-      for _p in "persist.radio.calls.on.ims:1" "persist.radio.jbims:1"; do
-        sp_try "${_p%%:*}" "${_p#*:}"
-      done
-      ;;
-    ru)
-      sp_try "persist.sys.locale" "ru-RU"
-      sp_try "persist.sys.language" "ru"
-      sp_try "persist.sys.country" "RU"
-      ;;
-    jp|ja)
-      sp_try "persist.radio.calls.on.ims:1"
-      ;;
-    kr|ko)
-      sp_try "persist.radio.calls.on.ims:1"
-      ;;
-    br)
-      sp_try "persist.radio.calls.on.ims:1"
-      ;;
-    *)
-      log_i "PROPS" "No region-specific props for $_ar_region"
-      ;;
+  _fb_fingerprint=$(resetprop ro.build.fingerprint 2>/dev/null || echo "")
+  case "$_fb_fingerprint" in
+    *userdebug*) sp_try "ro.build.fingerprint" "${_fb_fingerprint%userdebug}user" ;;
+    *)           [ -n "$_fb_fingerprint" ] && log_i "PROPS" "ro.build.fingerprint: already release" ;;
   esac
-  unset _ar_region _p
+  unset _fb_fingerprint
 }
+
+

@@ -24,6 +24,8 @@ if [ "$_usb_dbg" != "0" ]; then
   resetprop -n sys.usb.config mtp && log_d "ADB" "sys.usb.config → mtp"
   resetprop -n sys.oem_unlock_allowed 0 && log_d "ADB" "sys.oem_unlock_allowed → 0"
   resetprop -n service.adb.root 0 && log_d "ADB" "service.adb.root → 0"
+  resetprop -n init.svc.adbd stopped && log_d "ADB" "init.svc.adbd → stopped"
+  resetprop -n init.svc_debug_pid.adbd "" && log_d "ADB" "init.svc_debug_pid.adbd → ''"
   settings put global adb_enabled 0 && log_d "ADB" "adb_enabled → 0"
   log_i "ADB" "USB debugging disabled"
 fi

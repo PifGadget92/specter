@@ -8,11 +8,17 @@ MODDIR=${0%/*}
 
 _rf_hexpatch=$(cfg_get rom_fingerprint_hexpatch 1)
 _rf_prefix=$(cfg_get rom_fingerprint_prefix 1)
+_rf_pif=$(cfg_get rom_fingerprint_pif 1)
+_rf_spoof=$(cfg_get spoof_build_props 1)
 
-[ "$_rf_hexpatch$_rf_prefix" = "00" ] && exit 0
+[ "$_rf_hexpatch$_rf_prefix$_rf_pif$_rf_spoof" = "0000" ] && exit 0
 
 log_i "ROM_FP" "Cleaning ROM fingerprints"
 _cleaned=0
+
+if [ "$_rf_spoof" != "0" ]; then
+  spoof_build_props
+fi
 
 if [ "$_rf_hexpatch" != "0" ]; then
   for _rf_pattern in \
@@ -63,6 +69,17 @@ case "$_rf_cam_priv" in
   *org.lineageos*) resetprop -n persist.vendor.camera.privapp.list "com.android.camera" && _cleaned=$((_cleaned + 1)) && log_d "ROM_FP" "Scrubbed persist.vendor.camera.privapp.list" ;;
 esac
 unset _rf_cam_priv
+
+# PIF props cleanup
+if [ "$_rf_pif" != "0" ]; then
+  _rf_pif_props=$(resetprop 2>/dev/null | grep -iE "pihook|pixelprops|spoof" | cut -d'[' -f2 | cut -d']' -f1 || true)
+  for _rf_prop in $_rf_pif_props; do
+    [ -z "$_rf_prop" ] && continue
+    resetprop --delete "$_rf_prop" 2>/dev/null || true
+    _cleaned=$((_cleaned + 1))
+  done
+  unset _rf_pif_props _rf_prop
+fi
 
 # Kill vendor.lineage_health service
 _rf_health=$(resetprop init.svc.vendor.lineage_health 2>/dev/null || echo "")
