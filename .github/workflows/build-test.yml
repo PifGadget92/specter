@@ -73,4 +73,20 @@ jobs:
         with:
           name: ${{ steps.get_name.outputs.artifact_name }}
           path: Module/
-          retention-days: 7
+          retention-days: 28
+
+      - name: Send CI build to Telegram
+        if: github.event_name != 'pull_request'
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          CAPTION=$(printf '%s\n%s\n%s' "${{ steps.get_name.outputs.artifact_name }}" "$COMMIT_MSG" "${{ github.sha }}")
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
+            -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -F document=@"${{ steps.get_name.outputs.artifact_name }}.zip" \
+            -F caption="$CAPTION" \
+            "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument")
+          cat response.json
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Telegram send failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
