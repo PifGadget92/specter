@@ -8,5 +8,9 @@ files:
       two_letters_code:
         zh-CN: zh
         es-ES: es
+        fr-FR: fr
         ar-SA: ar
         ru-RU: ru
+        pl-PL: pl
+        tr-TR: tr
+        id-ID: id
