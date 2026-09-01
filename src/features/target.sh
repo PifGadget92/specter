@@ -27,25 +27,28 @@ ksm_lock_targets || die "Failed to lock target list"
 case "${1:-}" in
   --set)
     [ -n "${2:-}" ] && [ -f "$2" ] || die "target.sh --set requires an existing file argument"
-    # Apply/WebUI rebuilds from pm -3 only; re-add FIXED_TARGETS missing by base name.
+    _set_out="$SPECTER_DIR/.target_set.$$"
     _set_bases="$SPECTER_DIR/.target_set_bases.$$"
+    : > "$_set_out"
     : > "$_set_bases"
     while IFS= read -r _set_line || [ -n "$_set_line" ]; do
       [ -z "$_set_line" ] && continue
       case "$_set_line" in \[*\]) continue ;; esac
+      printf '%s\n' "$_set_line" >> "$_set_out"
       printf '%s\n' "$(_normalize_pkg "$_set_line")" >> "$_set_bases"
     done < "$2"
-    if [ -s "$2" ] && [ "$(tail -c 1 "$2" | wc -l)" -eq 0 ]; then
-      printf '\n' >> "$2"
-    fi
     for _set_entry in $FIXED_TARGETS; do
       grep -Fxq "$_set_entry" "$_set_bases" 2>/dev/null && continue
-      printf '%s\n' "$_set_entry" >> "$2"
+      printf '%s\n' "$_set_entry" >> "$_set_out"
     done
     rm -f "$_set_bases"
     unset _set_bases _set_line _set_entry
-    ksm_commit_targets_merge "$2" || die "Failed to commit target list from $2"
-    rm -f "$2"
+    if ksm_commit_targets_merge "$_set_out"; then
+      rm -f "$2" "$_set_out"
+    else
+      rm -f "$_set_out"
+      die "Failed to commit target list from $2"
+    fi
     log_i "TARGET" "Committed target list (sections preserved)"
     exit 0
     ;;

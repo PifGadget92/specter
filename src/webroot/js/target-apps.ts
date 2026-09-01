@@ -60,12 +60,12 @@ function targetScript(): string {
 }
 
 async function readTargetList(): Promise<string> {
-  const { stdout } = await exec(`sh ${targetScript()} --list-raw 2>/dev/null || echo ""`);
+  const { stdout, code, stderr } = await exec(`sh ${targetScript()} --list-raw`);
+  if (code !== 0) throw new Error(stderr || 'failed to read target list');
   return stdout || '';
 }
 
 async function writeTargetList(content: string): Promise<void> {
-  if (content && !content.endsWith('\n')) content += '\n';
   const staging = `${specterDir()}/.target_staging`;
   const encoded = await exec(`printf '%s' ${shellEscape(content)} | base64 -w0`);
   const written = await exec(
@@ -350,6 +350,8 @@ export async function openTargetAppsManager() {
           app.state = targetMap.get(app.packageName)!;
         }
         applyFilters();
+      }).catch((e) => {
+        appendToOutput(`[TARGET] Failed to reload target states: ${e}`, true);
       });
     }
   });

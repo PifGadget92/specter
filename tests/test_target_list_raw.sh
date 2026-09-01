@@ -46,6 +46,12 @@ _tc_bare_gms=$(grep -cx 'com.google.android.gms' "$KSM_TARGETS" || true)
 assert_eq "txt set: no bare gms dup" "0" "$_tc_bare_gms"
 assert_contains "txt set: android filled" "$_tc_pin" "android"
 
+_tc_staging="$TEST_ROOT/staging_nonewline.txt"
+printf '%s' 'io.example.app' > "$_tc_staging"
+run_feature target.sh --set "$_tc_staging" >/dev/null
+assert_eq "txt set: no-newline pkg own line" "1" "$(grep -cx 'io.example.app' "$KSM_TARGETS" || true)"
+assert_eq "txt set: android not glued" "0" "$(grep -cx 'io.example.appandroid' "$KSM_TARGETS" || true)"
+
 # ---------- OhMyKeymint: toml backend ----------
 bootstrap
 source_libs
