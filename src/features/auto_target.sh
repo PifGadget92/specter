@@ -20,6 +20,8 @@ log_i "AUTO_TARGET" "Scanning for new packages"
 ksm_available || { log_d "AUTO_TARGET" "no keystore manager, skipping"; exit 0; }
 [ -f "$KSM_TARGETS" ] || { log_w "AUTO_TARGET" "target list missing, skipping"; exit 0; }
 
+ksm_lock_targets || { log_e "AUTO_TARGET" "failed to lock target list"; exit 1; }
+
 pkgs=$(pm list packages -3 2>/dev/null) || { log_e "AUTO_TARGET" "pm list packages failed"; exit 1; }
 echo "$pkgs" | cut -d ":" -f 2 | sort -u > "$TEMP_LIST"
 [ ! -s "$TEMP_LIST" ] && { rm -f "$TEMP_LIST"; exit 0; }
@@ -30,7 +32,7 @@ echo "$_all" | cut -d ":" -f 2 | sort -u > "$_INSTALLED"
 unset _all
 
 _EXISTING="$SPECTER_DIR/.auto_target_existing.$$"
-ksm_read_targets > "$_EXISTING" 2>/dev/null || : > "$_EXISTING"
+ksm_read_targets > "$_EXISTING" || true
 
 _known=""
 [ -f "$KNOWN_PKGS" ] && _known=$(cat "$KNOWN_PKGS")
@@ -50,7 +52,11 @@ while IFS= read -r _pkg; do
 done < "$TEMP_LIST"
 
 _STAGING="$SPECTER_DIR/.auto_target_staging.$$"
-ksm_read_targets_raw > "$_STAGING" 2>/dev/null || : > "$_STAGING"
+ksm_read_targets_raw > "$_STAGING" || true
+if [ ! -s "$_STAGING" ] && [ -s "$KNOWN_PKGS" ]; then
+  log_w "AUTO_TARGET" "existing target list unreadable, skipping commit"
+  exit 0
+fi
 _ADDS="$SPECTER_DIR/.auto_target_adds.$$"
 : > "$_ADDS"
 
@@ -113,7 +119,6 @@ while IFS= read -r _line || [ -n "$_line" ]; do
 done < "$_STAGING"
 
 _txt_insert_default "$_TMP_CLEAN" "$_ADDS"
-ksm_lock_targets || { log_e "AUTO_TARGET" "failed to lock target list"; exit 1; }
 ksm_commit_targets "$_TMP_CLEAN"
 [ "$_cleaned" -gt 0 ] && log_i "AUTO_TARGET" "Removed $_cleaned stale/blacklisted entry(s)"
 
