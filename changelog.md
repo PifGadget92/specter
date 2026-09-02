@@ -1,3 +1,18 @@
+# v1.4.5-1
+
+**New**
+- Hungarian translations (#84)
+
+**Changed**
+- French and Turkish translations (#82, #89)
+
+**Fixed**
+- Auto-target still wiping the list to newly installed apps, lock covered commit only
+- App Targeting dropping installed system apps on apply and on hide/reopen (#87)
+- App Targeting apply appending `android` onto the last package, list file missing a trailing newline
+- `--set` appending FIXED_TARGETS onto the WebUI target file, failed `--list-raw` treated as an empty list
+- Target lock matching leftover PIDs after reboot, Apply waiting 15s while auto-target scanned
+
 # v1.4.5
 
 **New**
@@ -8,7 +23,7 @@
 - Hot install on KernelSU: module updates apply without a reboot
 - Action security patch sources: device, Pixel bulletin, or synthetic
 - Reset default options in Settings
-- French, Hungarian, and Indonesian translations
+- French + Indonesian translations
 
 **Changed**
 - Keystore management prefers TEESimulator over the Tricky Store family

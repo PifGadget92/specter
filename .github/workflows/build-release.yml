@@ -44,7 +44,10 @@ jobs:
             echo "Tag ($TAG) does not match module.prop version ($BASE_VER)"
             exit 1
           fi
-          RELEASE_VERSION="v${BASE_VER}"
+          case "$BASE_VER" in
+            *.*.*.*) RELEASE_VERSION="v${BASE_VER%.*}-${BASE_VER##*.}" ;;
+            *) RELEASE_VERSION="v${BASE_VER}" ;;
+          esac
           ZIP_NAME="specter-${RELEASE_VERSION}.zip"
           MAJOR=$(echo "$BASE_VER" | cut -d. -f1)
           MINOR=$(echo "$BASE_VER" | cut -d. -f2)
@@ -58,6 +61,11 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Stamp release module.prop
+        run: |
+          sed -i "s/^version=.*/version=${{ steps.version.outputs.base_version }}/" Module/module.prop
+          sed -i "s/^versionCode=.*/versionCode=${{ steps.version.outputs.version_code }}/" Module/module.prop
 
       - name: Package module zip
         run: |
