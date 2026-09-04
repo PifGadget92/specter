@@ -11,7 +11,7 @@ else
 fi
 
 . "$_root/lib/log.sh"
-case "${1:-}" in --list|--list-raw|--get) SPECTER_LOG_FD=2 ;; esac
+case "${1:-}" in --list|--list-raw|--get) export SPECTER_LOG_FD=2 ;; esac
 . "$_root/lib/constants.sh"
 . "$_root/lib/network.sh"
 . "$_root/lib/modules.sh"
