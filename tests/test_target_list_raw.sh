@@ -18,11 +18,16 @@ assert_contains "txt list-raw: force suffix kept" "$_tc_out" "com.existing.app!"
 assert_contains "txt list-raw: conditional suffix kept" "$_tc_out" "com.pinned.app?"
 assert_not_contains "txt list-raw: section dropped" "$_tc_out" "[a section]"
 
+SPECTER_LOG_LEVEL=debug PATH="$BIN_DIR:/usr/bin:/bin" MODDIR="$TEST_ROOT" SPECTER_DIR="$SPECTER_DIR" CONFIG_DIR="$CONFIG_DIR" TRICKY_DIR="$TRICKY_DIR" \
+  sh "$REPO_ROOT/src/features/target.sh" --list-raw >"$TEST_ROOT/list_raw_out" 2>/dev/null
+assert_not_contains "txt list-raw debug: no log_d on stdout" "$(cat "$TEST_ROOT/list_raw_out")" "[D]"
+
 _tc_staging="$TEST_ROOT/staging_txt.txt"
-printf 'com.new.app\n' > "$_tc_staging"
+printf '%s\n' 'com.new.app' 'not a package' > "$_tc_staging"
 run_feature target.sh --set "$_tc_staging" >/dev/null
 _tc_txt=$(cat "$KSM_TARGETS")
 assert_contains "txt set: user entry" "$_tc_txt" "com.new.app"
+assert_not_contains "txt set: junk line dropped" "$_tc_txt" "not a package"
 assert_contains "txt set: FIXED android" "$_tc_txt" "android"
 assert_contains "txt set: FIXED gms" "$_tc_txt" "com.google.android.gms"
 assert_contains "txt set: FIXED vending" "$_tc_txt" "com.android.vending"

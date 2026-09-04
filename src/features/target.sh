@@ -34,6 +34,7 @@ case "${1:-}" in
     while IFS= read -r _set_line || [ -n "$_set_line" ]; do
       [ -z "$_set_line" ] && continue
       case "$_set_line" in \[*\]) continue ;; esac
+      _ksm_pkg_ok "$_set_line" || continue
       printf '%s\n' "$_set_line" >> "$_set_out"
       printf '%s\n' "$(_normalize_pkg "$_set_line")" >> "$_set_bases"
     done < "$2"

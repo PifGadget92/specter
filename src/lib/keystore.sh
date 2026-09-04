@@ -139,14 +139,33 @@ _ksm_strip_suffix() {
   unset _kss_line
 }
 
+_ksm_pkg_ok() {
+  _kpo=$(_ksm_strip_suffix "$1")
+  if printf '%s\n' "$_kpo" | grep -qxE '[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*'; then
+    unset _kpo
+    return 0
+  fi
+  unset _kpo
+  return 1
+}
+
+_ksm_filter_pkgs() {
+  while IFS= read -r _kfp || [ -n "$_kfp" ]; do
+    [ -z "$_kfp" ] && continue
+    _ksm_pkg_ok "$_kfp" || continue
+    printf '%s\n' "$_kfp"
+  done
+  unset _kfp
+}
+
 ksm_read_targets() {
   case "$KSM_FORMAT" in
     json)
-      _teesim_read_apps "$KSM_TARGETS"
+      _teesim_read_apps "$KSM_TARGETS" | _ksm_filter_pkgs
       ;;
     toml)
       [ -f "$KSM_TARGETS" ] || return 0
-      _toml_read_scoop "$KSM_TARGETS"
+      _toml_read_scoop "$KSM_TARGETS" | _ksm_filter_pkgs
       ;;
     *)
       [ -f "$KSM_TARGETS" ] || return 0
@@ -154,7 +173,8 @@ ksm_read_targets() {
         [ -z "$_krt_line" ] && continue
         case "$_krt_line" in \[*\]) continue ;; esac
         _krt_base=$(_ksm_strip_suffix "$_krt_line")
-        [ -n "$_krt_base" ] && printf '%s\n' "$_krt_base"
+        _ksm_pkg_ok "$_krt_base" || continue
+        printf '%s\n' "$_krt_base"
       done < "$KSM_TARGETS"
       unset _krt_line _krt_base
       ;;
@@ -165,9 +185,20 @@ ksm_read_targets_raw() {
   case "$KSM_FORMAT" in
     # UI-facing list: package names only — uid:/pkg@user tokens are the
     # TEESimulator WebUI's concern and are preserved on commit regardless.
-    json) _teesim_read_apps "$KSM_TARGETS" default | grep -vE '^(uid:[0-9]+|[^[:space:]]+@[0-9]+)$' ;;
+    json) _teesim_read_apps "$KSM_TARGETS" default | _ksm_filter_pkgs ;;
     toml) ksm_read_targets ;;
-    *) [ -f "$KSM_TARGETS" ] && cat "$KSM_TARGETS" ;;
+    *)
+      [ -f "$KSM_TARGETS" ] || return 0
+      while IFS= read -r _krr_line || [ -n "$_krr_line" ]; do
+        [ -z "$_krr_line" ] && continue
+        case "$_krr_line" in
+          \[*\]) printf '%s\n' "$_krr_line"; continue ;;
+        esac
+        _ksm_pkg_ok "$_krr_line" || continue
+        printf '%s\n' "$_krr_line"
+      done < "$KSM_TARGETS"
+      unset _krr_line
+      ;;
   esac
 }
 

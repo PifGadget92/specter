@@ -1,22 +1,24 @@
 # shellcheck shell=sh
 
-log_d() { [ "${SPECTER_LOG_LEVEL:-info}" = "debug" ] || return 0; printf '[%s] [D] [%s] %s\n' "$(date '+%T')" "$1" "$2"; }
+_log_emit() { printf '%s\n' "$1" >&"${SPECTER_LOG_FD:-1}"; }
 
-log_u() { [ "${SPECTER_LOG_LEVEL:-info}" = "debug" ] && return 0 || echo "$2"; }
+log_d() { [ "${SPECTER_LOG_LEVEL:-info}" = "debug" ] || return 0; _log_emit "$(printf '[%s] [D] [%s] %s' "$(date '+%T')" "$1" "$2")"; }
+
+log_u() { [ "${SPECTER_LOG_LEVEL:-info}" = "debug" ] && return 0 || _log_emit "$2"; }
 
 log_i() {
   if [ "${SPECTER_LOG_LEVEL:-info}" = "debug" ]; then
-    printf '[%s] [I] [%s] %s\n' "$(date '+%T')" "$1" "$2"
+    _log_emit "$(printf '[%s] [I] [%s] %s' "$(date '+%T')" "$1" "$2")"
   else
-    echo "$2"
+    _log_emit "$2"
   fi
 }
 
 log_w() {
   if [ "${SPECTER_LOG_LEVEL:-info}" = "debug" ]; then
-    printf '[%s] [W] [%s] %s\n' "$(date '+%T')" "$1" "$2"
+    _log_emit "$(printf '[%s] [W] [%s] %s' "$(date '+%T')" "$1" "$2")"
   else
-    echo "Warning: $2"
+    _log_emit "Warning: $2"
   fi
 }
 
