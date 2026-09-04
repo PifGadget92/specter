@@ -63,7 +63,7 @@ refresh_module_description() {
 
   for _ksud in /data/adb/ksu/bin/ksud /data/adb/ap/bin/ksud; do
     [ -x "$_ksud" ] || continue
-    "$_ksud" module config --internal Specter set override.description "$_new_desc" 2>/dev/null || true
+    "$_ksud" module config set override.description "$_new_desc" 2>/dev/null || true
   done
 
   unset _problems _cf _new_desc _escaped _kb_info _kb_src _kb_ver _kb_rev _kb_soft _apps _patch _title _ksud
