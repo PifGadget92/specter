@@ -41,7 +41,16 @@ export function updateColorsSummary() {
 }
 
 export async function openColorsDialog() {
-  let selectedPreset = getCurrentPreset() || 'monet';
+  const monetSwitch = await cfgGet('theme_monet_switch');
+  let selectedPreset: string;
+  if (monetSwitch === '1') {
+    selectedPreset = 'monet';
+  } else if (monetSwitch === '0') {
+    const curr = getCurrentPreset();
+    selectedPreset = curr !== 'monet' ? curr : ((await cfgGet('theme_fixed_preset', 'blue')) || 'blue');
+  } else {
+    selectedPreset = getCurrentPreset() || 'monet';
+  }
 
   let updateActiveStates = () => {};
 
@@ -182,11 +191,13 @@ export async function openColorsDialog() {
               if (checked) {
                 selectedPreset = 'monet';
                 await cfgSet('theme_monet_switch', '1');
+                await cfgSet('theme_preset', 'monet');
                 applyPreset('monet');
               } else {
                 const fixed = (await cfgGet('theme_fixed_preset', 'blue')) || 'blue';
                 selectedPreset = fixed;
                 await cfgSet('theme_monet_switch', '0');
+                await cfgSet('theme_preset', fixed);
                 applyPreset(fixed);
               }
               updateActiveStates();
@@ -251,6 +262,7 @@ export async function openColorsDialog() {
                     selectedPreset = p;
                     await cfgSet('theme_fixed_preset', p);
                     await cfgSet('theme_monet_switch', '0');
+                    await cfgSet('theme_preset', p);
                     applyPreset(p);
                     updateActiveStates();
                   }

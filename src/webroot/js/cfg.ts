@@ -10,13 +10,23 @@ export function setDataDir(path: string) { DATA_DIR = path; }
 /** Pre-populate the config cache by reading all `.val` files from the config directory. */
 export async function cfgInit() {
   const preloaded = (window as any).__preloadedCfg;
-  if (preloaded && typeof preloaded === 'object') {
+  if (preloaded && typeof preloaded === 'object' && Object.keys(preloaded).length > 0) {
     const entries = Object.entries(preloaded);
     for (const [key, val] of entries) {
       if (typeof val === 'string') cache[key] = val;
     }
     return;
   }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sp_cfg_')) {
+          cache[k.slice(7)] = localStorage.getItem(k);
+        }
+      }
+    }
+  } catch {}
   if (!DATA_DIR) return;
   const cfgDir = shellEscape(DATA_DIR + '/config/val');
   const cmd = `for f in ${cfgDir}/*.val; do [ -f "\$f" ] || continue; k="\${f##*/}"; k="\${k%.val}"; v="\$(cat "\$f")"; [ -n "\$v" ] || continue; printf 'CFG:%s\n' "\$k"; printf '%s\n' "\$v"; done`;

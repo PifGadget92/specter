@@ -23,8 +23,22 @@ export function getCurrentPreset(): string {
 }
 
 export async function initTheme(savedMode: string) {
-  currentPreset = await cfgGet('theme_preset', 'monet') || 'monet';
+  const monetSwitch = await cfgGet('theme_monet_switch');
+  const savedPreset = await cfgGet('theme_preset', 'monet');
+
+  if (monetSwitch === '1') {
+    currentPreset = 'monet';
+  } else if (monetSwitch === '0') {
+    if (savedPreset && savedPreset !== 'monet') {
+      currentPreset = savedPreset;
+    } else {
+      currentPreset = (await cfgGet('theme_fixed_preset', 'blue')) || 'blue';
+    }
+  } else {
+    currentPreset = savedPreset || 'monet';
+  }
   const mode = savedMode || 'dark';
+  document.documentElement.setAttribute('data-theme-preset', currentPreset);
 
   if (currentPreset === 'monet') {
     await applyMonetPreset(mode);
@@ -35,20 +49,18 @@ export async function initTheme(savedMode: string) {
   wireThemeControls();
 
   // When user returns to the tab, re-fetch monet.json (written by background inotifyd)
-  if (currentPreset === 'monet') {
-    document.addEventListener('visibilitychange', async () => {
-      if (document.hidden || !monetSeed) return;
-      const res = await fetch('./json/monet.json?ts=' + Date.now());
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data?.seed && data?.ts && data.ts > (Number(localStorage.getItem('monet_seed_ts')) || 0)) {
-        localStorage.setItem('monet_seed', data.seed);
-        localStorage.setItem('monet_seed_ts', String(data.ts));
-        monetSeed = data.seed;
-        applyMonetPreset(document.documentElement.getAttribute('data-theme') || 'dark');
-      }
-    });
-  }
+  document.addEventListener('visibilitychange', async () => {
+    if (document.hidden || currentPreset !== 'monet') return;
+    const res = await fetch('./json/monet.json?ts=' + Date.now());
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data?.seed && (!data.ts || data.ts > (Number(localStorage.getItem('monet_seed_ts')) || 0))) {
+      localStorage.setItem('monet_seed', data.seed);
+      if (data.ts) localStorage.setItem('monet_seed_ts', String(data.ts));
+      monetSeed = data.seed;
+      applyMonetPreset(document.documentElement.getAttribute('data-theme') || 'dark');
+    }
+  });
 }
 
 export async function initThemeUI() {
@@ -83,6 +95,12 @@ async function applyMonetPreset(mode: string) {
   const resolved = resolveMode(mode);
   const isDark = resolved === 'dark';
 
+  document.documentElement.setAttribute('data-theme', mode);
+  document.documentElement.setAttribute('data-theme-preset', 'monet');
+  document.documentElement.setAttribute('data-theme-resolved', resolved);
+  cfgSet('theme_preset', 'monet');
+  cfgSet('theme_monet_switch', '1');
+
   if (!monetSeed) {
     monetSeed = await extractMonetColor();
     if (monetSeed) {
@@ -97,10 +115,6 @@ async function applyMonetPreset(mode: string) {
   }
 
   currentMappedPreset = presetClosestTo(monetSeed);
-  document.documentElement.setAttribute('data-theme', mode);
-  document.documentElement.setAttribute('data-theme-preset', 'monet');
-  document.documentElement.setAttribute('data-theme-resolved', resolved);
-  cfgSet('theme_preset', 'monet');
   applyNamedPreset(currentMappedPreset, isDark);
 }
 
@@ -114,6 +128,7 @@ export function refreshTheme() {
 export function applyMode(mode: string) {
   const resolved = resolveMode(mode);
   document.documentElement.setAttribute('data-theme', mode);
+  document.documentElement.setAttribute('data-theme-preset', currentPreset);
   document.documentElement.setAttribute('data-theme-resolved', resolved);
   document.documentElement.style.colorScheme = resolved;
   cfgSet('theme', mode);
@@ -128,20 +143,20 @@ export function applyMode(mode: string) {
 
 export function applyPreset(preset: string) {
   currentPreset = preset;
+  cfgSet('theme_preset', preset);
+  cfgSet('theme_monet_switch', preset === 'monet' ? '1' : '0');
+  if (preset !== 'monet') {
+    cfgSet('theme_fixed_preset', preset);
+  }
+  document.documentElement.setAttribute('data-theme-preset', preset);
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    (chip as HTMLElement & { selected: boolean }).selected = (chip as HTMLElement).dataset.preset === preset;
+  });
   if (preset === 'monet') {
-    document.querySelectorAll('.preset-chip').forEach(chip => {
-      (chip as HTMLElement & { selected: boolean }).selected = (chip as HTMLElement).dataset.preset === 'monet';
-    });
     monetSeed = null;
     applyMonetPreset(document.documentElement.getAttribute('data-theme') || 'dark');
     return;
   }
-  currentPreset = preset;
-  document.documentElement.setAttribute('data-theme-preset', preset);
-  cfgSet('theme_preset', preset);
-  document.querySelectorAll('.preset-chip').forEach(chip => {
-    (chip as HTMLElement & { selected: boolean }).selected = (chip as HTMLElement).dataset.preset === preset;
-  });
   const isDark = document.documentElement.getAttribute('data-theme-resolved') === 'dark';
   applyNamedPreset(preset, isDark);
 }
@@ -154,7 +169,7 @@ function applyNamedPreset(name: string, isDark: boolean) {
     root.style.setProperty(key, val);
   }
   try {
-    const s = PRESETS[name] || '';
+    const s = currentPreset === 'monet' ? (monetSeed || PRESETS[name] || '') : (PRESETS[name] || '');
     if (s) {
       localStorage.setItem('specter_theme_vars', JSON.stringify(vars));
       localStorage.setItem('specter_theme_resolved', isDark ? 'dark' : 'light');
@@ -169,13 +184,10 @@ async function extractMonetColor(): Promise<string | null> {
   if (preloaded && typeof preloaded?.then === 'function') {
     try {
       const data = await preloaded;
-      if (data?.seed && data?.ts) {
-        const cachedTs = localStorage.getItem('monet_seed_ts');
-        if (!cachedTs || data.ts > Number(cachedTs)) {
-          localStorage.setItem('monet_seed', data.seed);
-          localStorage.setItem('monet_seed_ts', String(data.ts));
-          return data.seed;
-        }
+      if (data?.seed) {
+        localStorage.setItem('monet_seed', data.seed);
+        if (data.ts) localStorage.setItem('monet_seed_ts', String(data.ts));
+        return data.seed;
       }
     } catch {}
   }
@@ -183,8 +195,7 @@ async function extractMonetColor(): Promise<string | null> {
   // Background handler file not available — check localStorage cache
   try {
     const cached = localStorage.getItem('monet_seed');
-    const ts = localStorage.getItem('monet_seed_ts');
-    if (cached && ts) return cached;
+    if (cached) return cached;
   } catch {}
   try {
     const cmd = [

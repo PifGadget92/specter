@@ -21,8 +21,11 @@
     window.__preloadedCfg = {};
     try { for(var __i=0;__i<localStorage.length;__i++){var __k=localStorage.key(__i);if(__k&&__k.indexOf('sp_cfg_')===0)window.__preloadedCfg[__k.slice(7)]=localStorage.getItem(__k);} } catch(__e){}
     (function () {
-      var mode = localStorage.getItem('themeMode') || 'dark';
-      var preset = localStorage.getItem('themePreset') || 'monet';
+      var cfg = window.__preloadedCfg || {};
+      var monetSw = cfg['theme_monet_switch'];
+      var isMonet = monetSw === '1' || (monetSw !== '0' && (cfg['theme_preset'] === 'monet' || !cfg['theme_preset']));
+      var mode = cfg['theme'] || localStorage.getItem('themeMode') || 'dark';
+      var preset = isMonet ? 'monet' : (cfg['theme_preset'] || cfg['theme_fixed_preset'] || localStorage.getItem('themePreset') || 'monet');
       var resolved = mode === 'auto'
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : mode;
@@ -37,7 +40,7 @@
       var cachedVars = localStorage.getItem('specter_theme_vars');
       var cachedSeed = localStorage.getItem('specter_theme_seed');
       var expectedSeed = preset === 'monet'
-        ? localStorage.getItem('monet_seed')
+        ? (localStorage.getItem('monet_seed') || '#1157CE')
         : (preset === 'blue' ? '#1157CE' : preset === 'yellow' ? '#8F4E06' : preset === 'red' ? '#B3251E' : preset === 'purple' ? '#7438D2' : preset === 'green' ? '#006C35' : preset === 'orange' ? '#9A4600' : preset === 'pink' ? '#B60D6E' : preset === 'cyan' ? '#00687C' : preset === 'grey' ? '#5E5E5E' : null);
       if (cachedVars && cachedSeed && cachedSeed === expectedSeed) {
         try {
