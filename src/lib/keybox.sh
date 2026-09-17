@@ -113,11 +113,11 @@ keybox_prefer_active() {
   unset _kpa_hist _kpa_active _kpa_soft _kpa_entry _kpa_src _kpa_ver
 }
 
-# Latest version for PROVIDER from catalog, preferring non-softbanned.
+# Latest version for PROVIDER from catalog, preferring non-softbanned and non-revoked.
 keybox_latest_for_provider() {
   _klp_hist="$1"
   _klp_prov="$2"
-  _klp_entries=$(echo "$_klp_hist" | grep -o '"entries":\[[^]]*\]' | grep -o '{[^}]*"source":"'"$_klp_prov"'"[^}]*}')
+  _klp_entries=$(echo "$_klp_hist" | grep -o '"entries":\[[^]]*\]' | grep -o '{[^}]*"source":"'"$_klp_prov"'"[^}]*}' | grep -v '"revoked":true')
   _klp_ver=$(printf '%s\n' "$_klp_entries" | grep -v '"softbanned":true' | sed 's/.*"version":"\([^"]*\)".*/\1/' | sort -rn | head -1)
   [ -z "$_klp_ver" ] && _klp_ver=$(printf '%s\n' "$_klp_entries" | grep '"softbanned":true' | sed 's/.*"version":"\([^"]*\)".*/\1/' | sort -rn | head -1)
   echo "$_klp_ver"
