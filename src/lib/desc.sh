@@ -42,7 +42,11 @@ refresh_module_description() {
     [ -z "$_patch" ] && _patch="-"
 
     if [ -f "$KSM_KEYBOX" ]; then
-      _title="$_kb_src${_kb_ver:+ $_kb_ver}"
+      if [ -n "$_kb_ver" ] && [ -n "$_kb_src" ] && [ "$_kb_src" != "Private" ]; then
+        _title="$_kb_ver by $_kb_src"
+      else
+        _title="$_kb_src${_kb_ver:+ $_kb_ver}"
+      fi
       if [ -n "$_kb_rev" ]; then
         _new_desc="🔑 $_title · ❌ | $_apps apps | 🛡️ $_patch"
       elif [ -n "$_kb_soft" ]; then

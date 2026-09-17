@@ -2578,8 +2578,30 @@ md-filled-tonal-button {
 .kb-hero-name-row {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+}
+
+.kb-hero-keybox-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--md-sys-color-primary);
+  letter-spacing: -0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.kb-hero-keybox-name--neutral {
+  color: var(--md-sys-color-on-surface);
+}
+
+.kb-hero-by {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--md-sys-color-on-surface-variant);
+  user-select: none;
 }
 
 .kb-hero-provider-name {

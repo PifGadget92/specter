@@ -81,17 +81,45 @@ function applyAllDeviceInfo(data: InfoJson) {
   applySecurityPatch(data);
 }
 
-function applyKeyboxStatus(data: KeyboxInfoJson) {
+export function applyKeyboxStatus(data: KeyboxInfoJson) {
+  const nameEl = document.getElementById('keybox-name');
+  const byEl = document.getElementById('keybox-by');
   const source = document.getElementById('keybox-source')!;
   const versionEl = document.getElementById('keybox-version')!;
   const statusEl = document.getElementById('keybox-status')!;
   const badgeEl = document.getElementById('kb-version-badge')!;
   if (!source || !versionEl || !statusEl || !badgeEl) return;
 
+  const setName = (text: string, isNeutral = false) => {
+    if (nameEl) {
+      nameEl.textContent = text;
+      nameEl.title = text;
+      nameEl.className = isNeutral ? 'kb-hero-keybox-name kb-hero-keybox-name--neutral' : 'kb-hero-keybox-name';
+      nameEl.style.display = '';
+    }
+  };
+
+  const setBy = (visible: boolean) => {
+    if (byEl) {
+      byEl.textContent = 'by';
+      byEl.style.display = visible ? '' : 'none';
+    }
+  };
+
+  const setSource = (text: string) => {
+    source.textContent = text;
+    source.title = text;
+    source.style.display = text ? '' : 'none';
+  };
+
   if (!data.installed) {
-    source.textContent = getTranslation('device_not_installed') || 'Not Installed';
+    const notInstalled = getTranslation('device_not_installed') || 'Not Installed';
+    setName(notInstalled, true);
+    setBy(false);
+    setSource('');
     versionEl.textContent = '';
     versionEl.className = 'kb-hero-provider-version kb-hero-provider-version--neutral';
+    versionEl.style.display = 'none';
     badgeEl.textContent = '';
     badgeEl.className = 'kb-version-badge';
     statusEl.textContent = '—';
@@ -99,14 +127,38 @@ function applyKeyboxStatus(data: KeyboxInfoJson) {
     return;
   }
 
-  const isRawbin = !!data.source;
-  const name = isRawbin
-    ? data.source!.charAt(0).toUpperCase() + data.source!.slice(1)
-    : getTranslation('device_generic') || 'Generic';
-  source.textContent = name;
+  const isPrivate = !!data.is_private || data.source?.toLowerCase() === 'private';
+  const isRawbin = !!data.source && !isPrivate && data.source !== 'unknown';
 
-  versionEl.textContent = data.text || data.source_version || '—';
-  versionEl.className = 'kb-hero-provider-version kb-hero-provider-version--neutral';
+  if (isPrivate) {
+    setName('Private Keybox', true);
+    setBy(false);
+    setSource('');
+    versionEl.textContent = '';
+    versionEl.style.display = 'none';
+  } else if (isRawbin) {
+    const kbName = data.text || (data.source_version ? (data.source_version.startsWith('v') ? data.source_version : 'v' + data.source_version) : '');
+    const providerName = data.source!;
+
+    if (kbName && providerName) {
+      setName(kbName);
+      setBy(true);
+      setSource(providerName);
+    } else {
+      setName(kbName || providerName);
+      setBy(false);
+      setSource('');
+    }
+    versionEl.textContent = '';
+    versionEl.style.display = 'none';
+  } else {
+    const genericText = data.text || getTranslation('device_generic') || 'Generic';
+    setName(genericText, true);
+    setBy(false);
+    setSource('');
+    versionEl.textContent = '';
+    versionEl.style.display = 'none';
+  }
 
   if (isRawbin && data.up_to_date && data.source_version) {
     badgeEl.textContent = getTranslation('device_latest') || 'Latest';
