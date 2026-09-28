@@ -24,6 +24,8 @@ esac
 
 ksm_lock_targets || die "Failed to lock target list"
 
+_ensure_blacklist
+
 case "${1:-}" in
   --set)
     [ -n "${2:-}" ] && [ -f "$2" ] || die "target.sh --set requires an existing file argument"
@@ -44,6 +46,7 @@ case "${1:-}" in
     done
     rm -f "$_set_bases"
     unset _set_bases _set_line _set_entry
+    _filter_blacklist "$_set_out"
     if ksm_commit_targets_merge "$_set_out"; then
       rm -f "$2" "$_set_out"
     else
@@ -59,7 +62,6 @@ MODULE_ROOT="${MODDIR%/features}"
 TEMP_PKGS="$MODULE_ROOT/pkgs.txt"
 _TMP_TARGET="$SPECTER_DIR/.target_new.$$"
 
-_ensure_blacklist
 _parse_customize
 
 _ensure_target_txt() {
@@ -69,6 +71,7 @@ _ensure_target_txt() {
   for _entry in $FIXED_TARGETS; do
     echo "$_entry"
   done > "$_et_tmp"
+  _filter_blacklist "$_et_tmp"
   ksm_commit_targets "$_et_tmp"
   unset _entry _et_tmp
 }
@@ -156,6 +159,7 @@ case "${1}" in
     fi
 
     sort -u "$_TMP_TARGET" -o "$_TMP_TARGET"
+    _filter_blacklist "$_TMP_TARGET"
 
     ksm_commit_targets "$_TMP_TARGET"
 

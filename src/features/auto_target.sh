@@ -102,16 +102,16 @@ while IFS= read -r _line || [ -n "$_line" ]; do
     continue
   fi
   echo "$_base" >> "$_SEEN"
+  if [ -n "$_bl_set" ] && echo "$_bl_set" | grep -Fxq "$_base" 2>/dev/null; then
+    _cleaned=$((_cleaned + 1))
+    continue
+  fi
   _keep=false
   for _fixed in $FIXED_TARGETS; do
     [ "$_base" = "$_fixed" ] && { _keep=true; break; }
   done
   if [ "$_keep" = "true" ]; then echo "$_line" >> "$_TMP_CLEAN"; continue; fi
   if grep -Fxq "$_base" "$_INSTALLED" 2>/dev/null; then
-    if [ -n "$_bl_set" ] && echo "$_bl_set" | grep -Fxq "$_base" 2>/dev/null; then
-      _cleaned=$((_cleaned + 1))
-      continue
-    fi
     echo "$_line" >> "$_TMP_CLEAN"
   else
     _cleaned=$((_cleaned + 1))

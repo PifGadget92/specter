@@ -46,6 +46,7 @@ _merge_cleanup() {
     # New packages go into the default (pre-section) keybox scope; appending
     # at the end would silently assign them to the last [name.xml] section.
     _txt_insert_default "$_TMP_TARGET" "$_TMP_ADD"
+    _filter_blacklist "$_TMP_TARGET"
     ksm_commit_targets "$_TMP_TARGET"
   fi
   rm -f "$_TMP_EXIST" "$_TMP_ADD"
