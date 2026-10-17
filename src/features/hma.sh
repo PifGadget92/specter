@@ -7,14 +7,6 @@ MODDIR=${0%/*}
 
 log_i "HMA" "Starting HMA config install"
 
-run_root() {
-  if [ "$(id -u)" -eq 0 ]; then
-    sh -c "$1" 2>/dev/null
-  else
-    su -c "$1" 2>/dev/null
-  fi
-}
-
 write_hma_config() {
   _src="$1"
   _pkg="$2"
@@ -22,27 +14,28 @@ write_hma_config() {
   _files_dir="$_app_dir/files"
   _ok=0
 
-  run_root "rm -rf /data/misc/hide_my_applist" || true
+  rm -rf /data/misc/hide_my_applist 2>/dev/null || true
 
-  if run_root "[ -d '$_app_dir' ]"; then
-    _uid_gid=$(run_root "stat -c '%u:%g' '$_app_dir'" || true)
-    if run_root "mkdir -p '$_files_dir' && cat '$_src' > '$_files_dir/config.json' && chmod 660 '$_files_dir/config.json'"; then
-      [ -n "$_uid_gid" ] && run_root "chown -R '$_uid_gid' '$_files_dir'" || true
-      run_root "restorecon -R '$_files_dir'" || true
+  if [ -d "$_app_dir" ]; then
+    _uid_gid=$(stat -c '%u:%g' "$_app_dir" 2>/dev/null || true)
+    mkdir -p "$_files_dir" 2>/dev/null || true
+    if cat "$_src" > "$_files_dir/config.json" 2>/dev/null; then
+      chmod 660 "$_files_dir/config.json" 2>/dev/null || true
+      [ -n "$_uid_gid" ] && chown -R "$_uid_gid" "$_files_dir" 2>/dev/null || true
+      restorecon -R "$_files_dir" 2>/dev/null || true
       _ok=1
     fi
   fi
 
-  _misc_dirs=$(run_root "ls -d /data/misc/hide_my_applist_* 2>/dev/null" || true)
-  if [ -n "$_misc_dirs" ]; then
-    for _d in $_misc_dirs; do
-      if run_root "[ -d '$_d' ] && cat '$_src' > '$_d/config.json' && chmod 644 '$_d/config.json'"; then
-        _ok=1
-      fi
-    done
-    run_root "chown system:system -R /data/misc/hide_my_applist*" || true
-    run_root "restorecon -R /data/misc/hide_my_applist*" || true
-  fi
+  for _d in /data/misc/hide_my_applist_*; do
+    [ -d "$_d" ] || continue
+    if cat "$_src" > "$_d/config.json" 2>/dev/null; then
+      chmod 644 "$_d/config.json" 2>/dev/null || true
+      chown -R system:system "$_d" 2>/dev/null || true
+      restorecon -R "$_d" 2>/dev/null || true
+      _ok=1
+    fi
+  done
 
   [ "$_ok" = "1" ]
 }
@@ -85,6 +78,6 @@ if check_network; then
   fi
 fi
 
-unset _installed_pkgs _pkg _found _src _app_dir _files_dir _ok _uid_gid _misc_dirs _d TEMP_FILE
+unset _installed_pkgs _pkg _found _src _app_dir _files_dir _ok _uid_gid _d TEMP_FILE
 log_i "HMA" "HMA config install complete"
 exit 0
