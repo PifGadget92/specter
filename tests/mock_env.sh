@@ -96,6 +96,7 @@ source_libs() {
   . "$REPO_ROOT/src/lib/keystore_ini.sh" 2>/dev/null
   . "$REPO_ROOT/src/lib/keystore.sh" 2>/dev/null
   . "$REPO_ROOT/src/lib/conflicts.sh" 2>/dev/null
+  . "$REPO_ROOT/src/lib/hma.sh" 2>/dev/null
   SPECTER_DIR="$TEST_ROOT/specter"
   GMS_PROPS_FILE="$TEST_ROOT/gms_certified_props.json"
   CONFLICT_BACKUP_FILE="$SPECTER_DIR/conflict_backups.txt"

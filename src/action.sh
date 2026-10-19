@@ -100,6 +100,50 @@ _first_boot=0
     fi
   fi
 
+  _feature_should_run "hma" && {
+    log_u "ACTION" ""
+    log_u "ACTION" "-> HMA-OSS Config:"
+    SPECTER_HMA_NO_UI_RELOAD=1 sh "$MODDIR/features/hma.sh" || true
+
+    _hma_mode=$(cfg_get "hma_launch_mode" "prompt")
+    _do_launch=0
+
+    if [ "$_hma_mode" = "always" ]; then
+      log_u "ACTION" "Auto-launching HMA-OSS (policy: auto-accept)..."
+      _do_launch=1
+    elif [ "$_hma_mode" = "never" ]; then
+      log_u "ACTION" "HMA-OSS launch skipped (policy: auto-refuse)"
+      log_u "ACTION" "Config written; reboot or open HMA-OSS to apply"
+    elif [ -t 1 ]; then
+      log_u "ACTION" ""
+      log_u "ACTION" "HMA-OSS app must open to apply config — open now?"
+      log_u "ACTION" "Press Volume UP to open, DOWN to skip (7s timeout)..."
+      _hma_key=$(timeout 7 getevent -l 2>/dev/null | grep -oE "KEY_VOLUME(UP|DOWN)" | head -1)
+      if [ "$_hma_key" = "KEY_VOLUMEUP" ]; then
+        log_u "ACTION" "Opening HMA-OSS..."
+        _do_launch=1
+      else
+        log_u "ACTION" "HMA-OSS launch skipped"
+        log_u "ACTION" "Config written; reboot or open HMA-OSS to apply"
+      fi
+      unset _hma_key
+    else
+      log_u "ACTION" "Config written; reboot or open HMA-OSS to apply"
+    fi
+
+    if [ "$_do_launch" = "1" ]; then
+      if [ "$(cfg_get toggle_hma_live_reload 1)" = "1" ]; then
+        _hma_request_reload /data/local/tmp || \
+          am start -n "org.frknkrc44.hma_oss/org.frknkrc44.hma_oss.ui.activity.MainActivity" >/dev/null 2>&1 || \
+          monkey -p org.frknkrc44.hma_oss -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
+      else
+        am start -n "org.frknkrc44.hma_oss/org.frknkrc44.hma_oss.ui.activity.MainActivity" >/dev/null 2>&1 || \
+        monkey -p org.frknkrc44.hma_oss -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
+      fi
+    fi
+    unset _hma_mode _do_launch
+  }
+
   run_device_info "$MODDIR"
   sh "$MODDIR/features/keybox_info.sh" >/dev/null 2>&1 || true
   sh "$MODDIR/features/keystore_info.sh" >/dev/null 2>&1 || true

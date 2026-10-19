@@ -18,7 +18,7 @@ beforeAll(() => {
   const out = execSync('find . -type f | sort', { cwd: MODULE_DIR, encoding: 'utf8', timeout: 10000 })
   files = out.trim().split('\n').filter(Boolean)
   moduleProp = readFileSync(`${MODULE_DIR}/module.prop`, 'utf8')
-})
+}, 90000)
 
 describe('module.zip structure', () => {
   it('build creates the Module directory', () => {

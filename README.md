@@ -48,7 +48,7 @@ Specter is a complete rewrite of what I originally built as Yurikey.
 - **ADB Disabler**: dev options, USB debugging, OEM unlock
 - **PIF**: auto-detect variant, fetch fingerprint, block spoof engines
 - **GMS Kill**: force-stops DroidGuard/GMS, clears Play Store
-- **Module Configs**: HMA-OSS/HMA/HMAL, Zygisk Next
+- **Module Configs**: HMA-OSS config generation, Zygisk Next
 - **Detection Cleanup**: removes detector logs, temp dirs, caches
 - **Widevine L1**: attestation keys via KmInstallKeybox
 - **Conflict Resolution**: 8 modules — aggressive disabled, passive coexists, TEESimulator WebUI feature ownership
@@ -80,8 +80,8 @@ Output: `Specter-v{version}.zip`
 ### Testing
 
 ```bash
-bash tests/run.sh          # Shell tests. 6 files, 97 assertions.
-npm test                   # TS tests. 10 files, 92 tests (vitest + happy-dom).
+bash tests/run.sh          # Shell tests. 12 files, 321 assertions.
+npm test                   # TS tests. 10 files, 94 tests (vitest + happy-dom).
 npx tsc --noEmit           # TypeScript strict check
 ```
 
