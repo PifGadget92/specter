@@ -3,7 +3,6 @@
 # -- URL definitions --
 KEYBOX_URL="https://rawbin.dpejoh.com/key"
 ATTESTATION_URL="https://rawbin.dpejoh.com/clips/attestation"
-HMA_CONFIG_URL="https://rawbin.dpejoh.com/clips/hma"
 CATALOG_URL="https://rawbin.dpejoh.com/catalog"
 GOOGLE_REVOCATION_URL="https://android.googleapis.com/attestation/status?encrypted=0"
 FALLBACK_KEYBOXES="Yuri/8"
@@ -20,8 +19,6 @@ FALLBACK_KEYBOXES="Yuri/8"
 : "${TARGET_TXT:=$TRICKY_DIR/target.txt}"
 : "${TRICKY_CONFIG:=$TRICKY_DIR/config.ini}"
 : "${SECURITY_PATCH_FILE:=$TRICKY_DIR/security_patch.txt}"
-: "${HMA_DIR:=/data/user/0/org.frknkrc44.hma_oss/files}"
-: "${HMA_FILE:=$HMA_DIR/config.json}"
 : "${GMS_PROPS_FILE:=/data/system/gms_certified_props.json}"
 : "${BACKUP_DIR:=$SPECTER_DIR/backup}"
 
@@ -37,6 +34,10 @@ FALLBACK_KEYBOXES="Yuri/8"
 : "${TEESIM_DIR:=/data/adb/teesim}"
 : "${TEESIM_CONFIG:=$TEESIM_DIR/config.json}"
 : "${TEESIM_KEYBOX:=$TEESIM_DIR/keybox.xml}"
+
+# -- HMA-OSS (service data dir is /data/misc/hide_my_applist<random>) --
+: "${HMAOSS_BASE:=/data/misc}"
+: "${HMAOSS_UID:=1000}"
 
 # -- Package lists --
 GMS_APPS="com.android.vending com.google.android.gsf com.google.android.gms com.google.android.contactkeys com.google.android.ims com.google.android.safetycore com.google.android.apps.walletnfcrel com.google.android.apps.nbu.paisa.user"
@@ -77,9 +78,11 @@ toggle_rom_fingerprint_names:1 toggle_rom_fingerprint_prefix:1
 toggle_rom_fingerprint_build_type:1
 toggle_action_gms:1 toggle_action_target:1
 toggle_action_security_patch:0 toggle_action_pif:1 toggle_action_keybox:1
+toggle_action_hma:1
 toggle_action_security_patch_device:1 toggle_action_security_patch_bulletin:1
 toggle_action_security_patch_synthetic:1
 toggle_action_gms_force_stop:1 toggle_action_gms_clear_data:0
+toggle_hma_target_user_apps:1 toggle_hma_live_reload:1
 toggle_auto_target:1 toggle_keybox_info:1 toggle_autopif:0 toggle_autokeybox:0
 "
 

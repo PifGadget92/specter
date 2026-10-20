@@ -32,7 +32,7 @@ _conflict_uninstall() {
 }
 
 _conflict_toggle_key() {
-  case "$1" in target|security_patch|gms|keybox|pif) printf 'toggle_action_%s' "$1" ;;
+  case "$1" in target|security_patch|gms|keybox|pif|hma) printf 'toggle_action_%s' "$1" ;;
     crom_props) printf 'toggle_custom_rom_props' ;;
     *) printf 'toggle_%s' "$1" ;; esac
 }

@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   import('./adb-disabler-ui.js').then(m => m.wireAdbDisabler()).catch(() => {});
   import('./prop-handler-ui.js').then(m => m.wirePropHandler()).catch(() => {});
   import('./gms-ui.js').then(m => m.wireGms()).catch(() => {});
+  import('./hma-ui.js').then(m => m.wireHma()).catch(() => {});
   import('./action-security-patch-ui.js').then(m => m.wireActionSecurityPatch()).catch(() => {});
   import('./security-patch-ui.js').then(m => m.wireSecurityPatch()).catch(() => {});
   import('./omk-trust-ui.js').then(m => m.wireOmkTrust()).catch(() => {});

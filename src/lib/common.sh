@@ -24,6 +24,7 @@ case "${1:-}" in --list|--list-raw|--get) export SPECTER_LOG_FD=2 ;; esac
 . "$_root/lib/keystore_ini.sh"
 . "$_root/lib/keystore.sh"
 . "$_root/lib/conflicts.sh"
+. "$_root/lib/hma.sh"
 
 [ "$(cfg_get dev_mode false 2>/dev/null)" = "true" ] && export SPECTER_LOG_LEVEL=debug
 
