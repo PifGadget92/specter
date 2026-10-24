@@ -185,7 +185,7 @@
   "theme_preset_pink": "Rose",
   "theme_preset_cyan": "Cyan",
   "theme_preset_grey": "Gris",
-  "advance_set_hma_desc": "Télécharge depuis GitHub une configuration anti-détection pour HMA-OSS/HMA/HMAL avec les permissions appropriées. Utilise le modèle par défaut intégré à HMA-OSS en cas d'échec du téléchargement.",
+  "advance_set_hma_desc": "Génère un profil de masquage HMA-OSS à partir des applications installées, le fusionne avec l'existant et l'applique immédiatement"
   "advance_set_hma-oss_configs": "Configuration de HMA-OSS",
   "advance_set_zygisk_desc": "Configure les paramètres de stratégie de liste d'exclusions, de type de mémoire et d'utilisation du linker du module Zygisk Next",
   "advance_set_zygisk_next_configs": "Configuration de Zygisk Next",
