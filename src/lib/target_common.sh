@@ -14,11 +14,28 @@ _ensure_blacklist() {
   unset _pkg
 }
 
-# Parse customize.txt, sets $_customize_mode
+# Fast package enumeration trying native cmd first, then pm
+_get_installed_packages() {
+  _gip_pkgs=""
+  if command -v cmd >/dev/null 2>&1; then
+    _gip_pkgs=$(cmd package list packages -3 2>/dev/null) || _gip_pkgs=""
+  fi
+  if [ -z "$_gip_pkgs" ]; then
+    _gip_pkgs=$(pm list packages -3 2>/dev/null) || _gip_pkgs=""
+  fi
+  if [ -n "$_gip_pkgs" ]; then
+    printf '%s\n' "$_gip_pkgs" | sed -n 's/^package://p'
+  fi
+  unset _gip_pkgs
+}
+
+# Parse customize.txt, sets $_customize_mode and $_customize_file
 _parse_customize() {
   _customize="/sdcard/Specter/customize.txt"
   _customize_mode=""
+  _customize_file=""
   if [ -f "$_customize" ]; then
+    _customize_file="$_customize"
     _first=$(head -1 "$_customize" 2>/dev/null || echo "")
     case "$_first" in
       "!") _customize_mode="force_all" ;;
@@ -28,91 +45,63 @@ _parse_customize() {
     esac
     log_d "TARGET" "customize.txt mode: $_customize_mode"
   fi
-  unset _customize _first
+  unset _first
 }
 
-# Merge helpers — used by --merge and --merge-denylist in target.sh
-
-_merge_setup() {
-  _count=0; _added=0
-  _TMP_EXIST="$SPECTER_DIR/.target_exist.$$"
-  _TMP_TARGET="$SPECTER_DIR/.target_new.$$"
-  _TMP_ADD="$SPECTER_DIR/.target_add.$$"
-  : > "$_TMP_ADD"
-}
-
-_merge_cleanup() {
-  if [ -f "$_TMP_TARGET" ]; then
-    # New packages go into the default (pre-section) keybox scope; appending
-    # at the end would silently assign them to the last [name.xml] section.
-    _txt_insert_default "$_TMP_TARGET" "$_TMP_ADD"
-    _filter_blacklist "$_TMP_TARGET"
-    ksm_commit_targets "$_TMP_TARGET"
+# Resolve default suffix and selective customize rules
+_resolve_default_suffix() {
+  _def_suffix=""
+  _cust_selective=0
+  if [ "$KSM_PER_APP_MODES" = "1" ]; then
+    _parse_customize
+    case "$_customize_mode" in
+      force_all)     _def_suffix="!" ;;
+      condition_all) _def_suffix="?" ;;
+      disabled)      _def_suffix="" ;;
+      selective)
+        _cust_selective=1
+        _def_mode=$(cfg_get target_default_mode "bare" 2>/dev/null || echo "bare")
+        case "$_def_mode" in
+          force)       _def_suffix="!" ;;
+          conditional) _def_suffix="?" ;;
+          *)           _def_suffix="" ;;
+        esac
+        ;;
+      *)
+        _def_mode=$(cfg_get target_default_mode "bare" 2>/dev/null || echo "bare")
+        case "$_def_mode" in
+          force)       _def_suffix="!" ;;
+          conditional) _def_suffix="?" ;;
+          *)           _def_suffix="" ;;
+        esac
+        ;;
+    esac
   fi
-  rm -f "$_TMP_EXIST" "$_TMP_ADD"
-  unset _TMP_EXIST _TMP_TARGET _TMP_ADD
-}
-
-_merge_load_existing() {
-  ksm_read_targets_raw > "$_TMP_TARGET" 2>/dev/null || : > "$_TMP_TARGET"
-  ksm_read_targets > "$_TMP_EXIST" 2>/dev/null || : > "$_TMP_EXIST"
-}
-
-_normalize_pkg() {
-  _np_line="$1"
-  case "$_np_line" in *!) _np_line=${_np_line%!} ;; *\?) _np_line=${_np_line%\?} ;; esac
-  printf '%s' "$_np_line"
-  unset _np_line
-}
-
-_append_missing() {
-  _am_line="$1"
-  _am_base=$(_normalize_pkg "$_am_line")
-  [ -z "$_am_base" ] && { unset _am_line _am_base; return 0; }
-  if ! grep -Fxq "$_am_base" "$_TMP_EXIST" 2>/dev/null; then
-    printf '%s\n' "$_am_line" >> "$_TMP_ADD"
-    printf '%s\n' "$_am_base" >> "$_TMP_EXIST"
-    _added=$((_added + 1))
-  fi
-  _count=$((_count + 1))
-  unset _am_line _am_base
 }
 
 # Filter $1 (a package list file) against the blacklist when enabled.
 _filter_blacklist() {
   _fb_file="$1"
   [ -f "$SPECTER_DIR/blacklist_enabled" ] && [ -s "$BLACKLIST" ] || { unset _fb_file; return 0; }
-  if grep -Fvxf "$BLACKLIST" "$_fb_file" > "${_fb_file}.filtered" 2>/dev/null; then
-    mv "${_fb_file}.filtered" "$_fb_file"
-  else
-    log_w "TARGET" "Blacklist filtering failed"
-  fi
-  unset _fb_file
-}
-
-# Compute suffix for a given package based on customize.txt and TEE status
-# Sets $_suffix and $_custom_matched
-_compute_suffix() {
-  _pkg="$1"
-  _suffix="" _custom_matched=false
-  # Suffixes are only meaningful when the backend supports per-app modes
-  # (txt); json/toml get them stripped on commit anyway.
-  [ "$KSM_PER_APP_MODES" = "1" ] || return 0
-  if [ "$_customize_mode" = "selective" ]; then
-    _match=$(grep -E "^${_pkg}[!?]?$" "$_customize" 2>/dev/null | head -1)
-    if [ -n "$_match" ]; then
-      _custom_matched=true
-      case "$_match" in
-        *!) _suffix="!" ;;
-        *\?) _suffix="?" ;;
-        *) _suffix="" ;;
-      esac
-    fi
-  fi
-  if [ "$_customize_mode" = "force_all" ]; then
-    _suffix="!"
-  elif [ "$_customize_mode" = "condition_all" ]; then
-    _suffix="?"
-  fi
-
+  _fb_tmp="${_fb_file}.filtered.$$"
+  awk -v bl_file="$BLACKLIST" '
+    BEGIN {
+      while ((getline bl < bl_file) > 0) {
+        sub(/\r$/, "", bl); sub(/[[:space:]]+$/, "", bl); sub(/^[[:space:]]+/, "", bl)
+        if (bl != "") blacklist[bl] = 1
+      }
+      close(bl_file)
+    }
+    {
+      sub(/\r$/, "", $0)
+      if ($0 ~ /^[[:space:]]*\[/) { print; next }
+      line = $0
+      sub(/[[:space:]]+$/, "", line); sub(/^[[:space:]]+/, "", line)
+      base = line
+      sub(/[!?]$/, "", base)
+      if (base in blacklist) next
+      print
+    }
+  ' "$_fb_file" > "$_fb_tmp" 2>/dev/null && mv -f "$_fb_tmp" "$_fb_file" || rm -f "$_fb_tmp"
+  unset _fb_file _fb_tmp
 }

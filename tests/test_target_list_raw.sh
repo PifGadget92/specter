@@ -130,6 +130,59 @@ assert_contains "json set: new app on default" "$_tc_cfg" "com.new.json.app"
 assert_contains "json set: other profile kept" "$_tc_cfg" '"work"'
 assert_contains "json set: other profile apps kept" "$_tc_cfg" "com.eltavine.duckdetector"
 
+# ---------- list generation (overwrite & merge) ----------
+bootstrap
+source_libs
+mk_module tricky_store "Tricky Store"
+detect_keystore_manager
+
+# Overwrite mode
+_gen_out=$(run_feature target.sh)
+assert_contains "overwrite: mode announced" "$_gen_out" "Mode: overwrite"
+assert_contains "overwrite: fixed target" "$(cat "$KSM_TARGETS")" "android"
+assert_contains "overwrite: pm target" "$(cat "$KSM_TARGETS")" "com.dpejoh.specter"
+assert_not_contains "overwrite: temp file consumed cleanly" "$_gen_out" "No such file"
+assert_not_contains "overwrite: count not zero" "$_gen_out" "Wrote 0 entries"
+
+# Overwrite with default mode force (!)
+cfg_set target_default_mode "force"
+run_feature target.sh >/dev/null
+assert_contains "overwrite: force suffix applied" "$(cat "$KSM_TARGETS")" "com.dpejoh.specter!"
+assert_not_contains "overwrite: fixed target stays bare" "$(cat "$KSM_TARGETS")" "android!"
+
+# Merge mode
+cfg_set target_default_mode "bare"
+cat > "$KSM_TARGETS" << 'EOF'
+android
+com.google.android.gms
+EOF
+_merge_out=$(run_feature target.sh --merge)
+assert_contains "merge: mode announced" "$_merge_out" "Mode: merge"
+assert_contains "merge: new app added" "$(cat "$KSM_TARGETS")" "com.dpejoh.specter"
+assert_contains "merge: existing kept" "$(cat "$KSM_TARGETS")" "android"
+
+# Merge-denylist seeds mandatory targets when the list is empty
+rm -f "$KSM_TARGETS"
+cat > "$BIN_DIR/magisk" << 'MOCK'
+#!/bin/sh
+[ "$1" = "--denylist" ] && [ "$2" = "ls" ] && echo "com.denied.app|10123"
+exit 0
+MOCK
+chmod +x "$BIN_DIR/magisk"
+_deny_out=$(run_feature target.sh --merge-denylist)
+assert_contains "denylist: mode announced" "$_deny_out" "Mode: merge-denylist"
+assert_contains "denylist: entry added" "$(cat "$KSM_TARGETS")" "com.denied.app"
+assert_contains "denylist: fixed target seeded" "$(cat "$KSM_TARGETS")" "android"
+assert_not_contains "denylist: fixed target stays bare" "$(cat "$KSM_TARGETS")" "android!"
+rm -f "$BIN_DIR/magisk"
+
+# Blacklist filtering during overwrite
+touch "$SPECTER_DIR/blacklist_enabled"
+echo "com.dpejoh.specter" > "$SPECTER_DIR/blacklist.txt"
+run_feature target.sh >/dev/null
+assert_not_contains "blacklist: blacklisted pkg dropped" "$(cat "$KSM_TARGETS")" "com.dpejoh.specter"
+assert_contains "blacklist: fixed target preserved" "$(cat "$KSM_TARGETS")" "android"
+
 # ---------- argument handling ----------
 bootstrap
 source_libs
