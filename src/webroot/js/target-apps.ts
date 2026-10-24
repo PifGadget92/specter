@@ -67,9 +67,9 @@ async function readTargetList(): Promise<string> {
 
 async function writeTargetList(content: string): Promise<void> {
   const staging = `${specterDir()}/.target_staging`;
-  const encoded = await exec(`printf '%s' ${shellEscape(content)} | base64 -w0`);
+  const b64 = btoa(unescape(encodeURIComponent(content)));
   const written = await exec(
-    `mkdir -p ${specterDir()} && printf '%s' "${encoded.stdout || ''}" | base64 -d > ${shellEscape(staging)}`
+    `mkdir -p ${specterDir()} && printf '%s' ${shellEscape(b64)} | base64 -d > ${shellEscape(staging)}`
   );
   if (written.code !== 0) throw new Error(written.stderr || 'failed to stage target list');
   const committed = await exec(`sh ${targetScript()} --set ${shellEscape(staging)}`);
@@ -119,9 +119,13 @@ async function fetchUserPackages(): Promise<string[]> {
       for (const p of list) pkgSet.add(p);
     } catch {}
   }
-  const r = await shellExec('pm list packages -3 2>/dev/null | cut -d: -f2');
-  for (const pkg of r.stdout.split('\n').map(s => s.trim()).filter(Boolean)) {
-    pkgSet.add(pkg);
+  if (pkgSet.size > 0) return [...pkgSet];
+  // Both cmd and pm emit "package:<name>"; strip the prefix here so the
+  // fallback works regardless of which one answered.
+  const r = await shellExec('cmd package list packages -3 2>/dev/null || pm list packages -3 2>/dev/null');
+  for (const raw of r.stdout.split('\n')) {
+    const pkg = raw.trim().replace(/^package:/, '');
+    if (pkg) pkgSet.add(pkg);
   }
   return [...pkgSet];
 }
@@ -468,43 +472,40 @@ export async function openTargetAppsManager() {
       if (typeof ksu?.cacheAllPackageIcons === 'function') {
         try { ksu.cacheAllPackageIcons(48); } catch {}
       }
-      let perAppModes: boolean | undefined;
-      try {
-        const km = await fetchJson<KeystoreManagerJson>(API_URLS.KEYSTORE_MANAGER!, 0);
-        const fmt = km?.format || '';
-        ksmFormat = fmt === 'json' || fmt === 'toml' || fmt === 'txt' || fmt === 'ini' ? fmt : 'txt';
-        perAppModes = km?.perAppModes;
-      } catch {
-        ksmFormat = 'txt';
-      }
-      // Contract flag from keystore_manager.json; format sniff only as a
-      // fallback for stale info files written by older Specter versions.
+
+      // Fetch Keystore config, default mode, target list, and user packages concurrently
+      const [km, defaultModeVal, targetResult, pkgs] = await Promise.all([
+        fetchJson<KeystoreManagerJson>(API_URLS.KEYSTORE_MANAGER!, 0).catch(() => null),
+        cfgGet('target_default_mode', 'bare').catch(() => 'bare'),
+        readTargetList(),
+        fetchUserPackages(),
+      ]);
+
+      const fmt = km?.format || '';
+      ksmFormat = fmt === 'json' || fmt === 'toml' || fmt === 'txt' || fmt === 'ini' ? fmt : 'txt';
+      const perAppModes = km?.perAppModes;
       supportsPerAppMode = perAppModes ?? (ksmFormat === 'txt' || ksmFormat === 'ini');
+      defaultMode = supportsPerAppMode ? (defaultModeVal || 'bare') : 'bare';
+
       const modeItem = overlay.querySelector('#ta-mode') as HTMLElement | null;
       if (modeItem) {
         modeItem.hidden = ksmFormat === 'toml';
-        if (!modeItem.hidden && ksmFormat === 'json') {
-          try {
-            const { stdout } = await exec(`sh ${shellEscape(getModuleDir() + '/webroot/common/conflicts.sh')} status 2>/dev/null || echo '[]'`);
-            const entries = JSON.parse(stdout) as Array<{ key: string; prioritySpecter: boolean }>;
-            const te = entries.find(e => e.key === 'teesim');
-            if (te && !te.prioritySpecter) modeItem.hidden = true;
-          } catch {}
-        }
         const headline = modeItem.querySelector('[slot="headline"]');
         if (headline) {
           headline.textContent = ksmFormat === 'json'
             ? t('ta_teesim_mode_title', 'Operation Mode')
             : t('ta_mode_menu', 'Default Mode');
         }
+        if (!modeItem.hidden && ksmFormat === 'json') {
+          exec(`sh ${shellEscape(getModuleDir() + '/webroot/common/conflicts.sh')} status 2>/dev/null || echo '[]'`).then(({ stdout }) => {
+            try {
+              const entries = JSON.parse(stdout) as Array<{ key: string; prioritySpecter: boolean }>;
+              const te = entries.find(e => e.key === 'teesim');
+              if (te && !te.prioritySpecter) modeItem.hidden = true;
+            } catch {}
+          }).catch(() => {});
+        }
       }
-      if (!supportsPerAppMode) defaultMode = 'bare';
-      else defaultMode = (await cfgGet('target_default_mode', 'bare')) || 'bare';
-
-      const [targetResult, pkgs] = await Promise.all([
-        readTargetList(),
-        fetchUserPackages(),
-      ]);
 
       ingestTargetList(targetResult);
       await replaceApps(pkgs);
@@ -521,16 +522,17 @@ export async function openTargetAppsManager() {
 
   async function refreshApps() {
     try {
-      defaultMode = (await cfgGet('target_default_mode', 'bare')) || 'bare';
-      const [targetResult, pkgs] = await Promise.all([
+      const [defaultModeVal, targetResult, pkgs] = await Promise.all([
+        cfgGet('target_default_mode', 'bare').catch(() => 'bare'),
         readTargetList(),
         fetchUserPackages(),
       ]);
+      defaultMode = supportsPerAppMode ? (defaultModeVal || 'bare') : 'bare';
 
       ingestTargetList(targetResult);
       await replaceApps(pkgs);
 
-      appendToOutput(`[TARGET] Refreshed ${apps.length} user apps, ${targetMap.size} in target.txt`);
+      appendToOutput(`[TARGET] Refreshed ${apps.length} user apps, ${targetMap.size} in target list`);
       applyFilters();
     } catch (e) {
       appendToOutput(`[TARGET] Refresh failed: ${e}`, true);
