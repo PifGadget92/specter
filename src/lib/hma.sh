@@ -65,31 +65,45 @@ _hma_list_path() {
   return 0
 }
 
+# printf is an external binary on Android's sh, so keep these loops in awk.
 _hma_installed() {
-  _hma_timeout "$HMAOSS_CMD_TIMEOUT" pm list packages 2>/dev/null | sed 's/^package://' | sort -u || true
+  _hma_timeout "$HMAOSS_CMD_TIMEOUT" pm list packages 2>/dev/null | awk '
+    {
+      gsub(/\r/, "", $0)
+      sub(/^package:/, "", $0)
+      if ($0 != "" && !seen[$0]++) print
+    }
+  ' || true
   return 0
 }
 
 # User apps that become hiding targets, minus the Specter blacklist.
 _hma_user_apps() {
-  _hua_all=$(_hma_timeout "$HMAOSS_CMD_TIMEOUT" pm list packages -3 2>/dev/null | sed 's/^package://' | sort -u) || _hua_all=""
-  if [ -z "$_hua_all" ]; then
-    unset _hua_all
-    return 0
-  fi
   _hua_bl=""
   if [ -f "$SPECTER_DIR/blacklist_enabled" ] && [ -s "$SPECTER_DIR/blacklist.txt" ]; then
-    _hua_bl=$(cat "$SPECTER_DIR/blacklist.txt")
+    _hua_bl="$SPECTER_DIR/blacklist.txt"
   fi
-  printf '%s\n' "$_hua_all" | while IFS= read -r _hua_p; do
-    [ -n "$_hua_p" ] || continue
-    [ "$_hua_p" = "$HMAOSS_PKG" ] && continue
-    if [ -n "$_hua_bl" ] && printf '%s\n' "$_hua_bl" | grep -Fxq "$_hua_p" 2>/dev/null; then
-      continue
-    fi
-    printf '%s\n' "$_hua_p"
-  done
-  unset _hua_all _hua_bl _hua_p
+  _hma_timeout "$HMAOSS_CMD_TIMEOUT" pm list packages -3 2>/dev/null | awk \
+    -v hma="$HMAOSS_PKG" -v bl_file="$_hua_bl" '
+    BEGIN {
+      if (bl_file != "") {
+        while ((getline b < bl_file) > 0) {
+          gsub(/\r/, "", b)
+          if (b != "") black[b] = 1
+        }
+        close(bl_file)
+      }
+    }
+    {
+      gsub(/\r/, "", $0)
+      sub(/^package:/, "", $0)
+      if ($0 == "" || $0 == hma) next
+      if ($0 in black) next
+      if (seen[$0]++) next
+      print
+    }
+  '
+  unset _hua_bl
   return 0
 }
 
@@ -101,15 +115,22 @@ _hma_filter_hide_list() {
     unset _hfl_list _hfl_inst _hfl_out
     return 0
   fi
-  while IFS= read -r _hfl_line || [ -n "$_hfl_line" ]; do
-    _hfl_line=$(printf '%s' "$_hfl_line" | tr -d '\r')
-    case "$_hfl_line" in ''|\#*) continue ;; esac
-    _hfl_line=${_hfl_line%% *}
-    [ -n "$_hfl_line" ] || continue
-    grep -Fxq "$_hfl_line" "$_hfl_inst" 2>/dev/null && printf '%s\n' "$_hfl_line" >> "$_hfl_out"
-  done < "$_hfl_list"
-  sort -u "$_hfl_out" -o "$_hfl_out" 2>/dev/null || true
-  unset _hfl_list _hfl_inst _hfl_out _hfl_line
+  awk -v inst="$_hfl_inst" '
+    BEGIN {
+      while ((getline p < inst) > 0) {
+        gsub(/\r/, "", p)
+        if (p != "") installed[p] = 1
+      }
+      close(inst)
+    }
+    {
+      gsub(/\r/, "", $0)
+      if ($0 == "" || $0 ~ /^#/) next
+      sub(/ .*$/, "", $0)
+      if ($0 != "" && ($0 in installed) && !seen[$0]++) print
+    }
+  ' "$_hfl_list" > "$_hfl_out"
+  unset _hfl_list _hfl_inst _hfl_out
   return 0
 }
 
@@ -122,14 +143,21 @@ _hma_appconfig_json() {
 
 # One "pkg<TAB>AppConfig" line per scope addition.
 _hma_build_scope() {
-  _hbs_apps="$1" _hbs_tpl="$2" _hbs_out="$3"
-  _hbs_ac=$(_hma_appconfig_json "$_hbs_tpl")
-  : > "$_hbs_out"
-  while IFS= read -r _hbs_p || [ -n "$_hbs_p" ]; do
-    [ -n "$_hbs_p" ] || continue
-    printf '%s\t%s\n' "$_hbs_p" "$_hbs_ac" >> "$_hbs_out"
-  done < "$_hbs_apps"
-  unset _hbs_apps _hbs_tpl _hbs_out _hbs_ac _hbs_p
+  _hbs_apps="$1" _hbs_tpl="$2" _hbs_out="$3" _hbs_def="${4:-}"
+  if [ -n "$_hbs_def" ] && [ -f "$_hbs_def" ]; then
+    awk -v def="$_hbs_def" '
+      BEGIN {
+        if ((getline ac < def) > 0) sub(/\r$/, "", ac)
+        close(def)
+      }
+      { if ($0 != "") print $0 "\t" ac }
+    ' "$_hbs_apps" > "$_hbs_out"
+  else
+    _hbs_ac=$(_hma_appconfig_json "$_hbs_tpl")
+    HMAOSS_AC="$_hbs_ac" awk '{ if ($0 != "") print $0 "\t" ENVIRON["HMAOSS_AC"] }' \
+      "$_hbs_apps" > "$_hbs_out"
+  fi
+  unset _hbs_apps _hbs_tpl _hbs_out _hbs_def _hbs_ac
   return 0
 }
 
@@ -367,7 +395,7 @@ BEGIN {
   }
   if (d != 0) exit 3
 
-  print out
+  printf "%s", out
 }
 ' > "$_hmc_out"
   _hmc_rc=$?

@@ -24,7 +24,10 @@ _hma_budget() {
 
 log_i "HMA" "Starting HMA-OSS config generation"
 
-if ! _hma_installed | grep -Fxq "$HMAOSS_PKG"; then
+_hma_inst="$_HMA_TMP/installed"
+HMAOSS_CMD_TIMEOUT=$(_hma_budget 20)
+_hma_installed > "$_hma_inst"
+if ! grep -Fxq "$HMAOSS_PKG" "$_hma_inst"; then
   log_w "HMA" "HMA-OSS not installed, skipping"
   exit 0
 fi
@@ -41,7 +44,6 @@ if [ -z "$_hma_list" ]; then
   exit 1
 fi
 
-_hma_inst="$_HMA_TMP/installed"
 _hma_apps="$_HMA_TMP/hidden-apps"
 _hma_user="$_HMA_TMP/user-apps"
 _hma_scope="$_HMA_TMP/scope-entries"
@@ -49,36 +51,35 @@ _hma_default="$_HMA_TMP/default.json"
 _hma_base="$_HMA_TMP/base.json"
 _hma_merged="$_HMA_TMP/merged.json"
 
-HMAOSS_CMD_TIMEOUT=$(_hma_budget 20)
-_hma_installed > "$_hma_inst"
-if [ ! -s "$_hma_inst" ]; then
-  log_e "HMA" "could not list packages, aborting"
-  exit 1
-fi
 _hma_filter_hide_list "$_hma_list" "$_hma_inst" "$_hma_apps"
+
 _hma_skip_tpl=0
 if [ ! -s "$_hma_apps" ]; then
   _hma_skip_tpl=1
   log_w "HMA" "no listed root manager installed, keeping existing template"
 fi
+_hma_appconfig_json "$HMAOSS_TEMPLATE" > "$_hma_default"
 if [ "$(cfg_get toggle_hma_target_user_apps 1)" = "1" ]; then
   _hma_user_apps > "$_hma_user"
-  _hma_build_scope "$_hma_user" "$HMAOSS_TEMPLATE" "$_hma_scope"
+  _hma_build_scope "$_hma_user" "$HMAOSS_TEMPLATE" "$_hma_scope" "$_hma_default"
 else
   : > "$_hma_scope"
 fi
-_hma_appconfig_json "$HMAOSS_TEMPLATE" > "$_hma_default"
 
 _hma_cfg="$_hma_dir/config.json"
 HMAOSS_CMD_TIMEOUT=$(_hma_budget 20)
 if [ -f "$_hma_cfg" ]; then
-  if ! _hma_copy_config "$_hma_cfg" "$_hma_base"; then
+  if [ -r "$_hma_cfg" ] && IFS= read -r _hma_probe < "$_hma_cfg"; then
+    # Readable in place: let the merge read the real file and skip a copy.
+    _hma_base="$_hma_cfg"
+  elif ! _hma_copy_config "$_hma_cfg" "$_hma_base"; then
     log_e "HMA" "failed to read existing config, leaving it untouched"
     exit 1
   fi
 else
   : > "$_hma_base"
 fi
+unset _hma_probe
 
 _hmc_rc=0
 _hma_merge_config "$_hma_base" "$_hma_apps" "$_hma_scope" "$_hma_default" "$_hma_merged" "$_hma_skip_tpl" "$(_hma_budget 30)" || _hmc_rc=$?
@@ -98,8 +99,10 @@ if ! _hma_install_config "$_hma_merged" "$_hma_cfg" "$_hma_dir"; then
   exit 1
 fi
 
-_hma_hidden_n=$(wc -l < "$_hma_apps" | tr -d ' ')
-_hma_added_n=$(wc -l < "$_hma_scope" | tr -d ' ')
+_hma_hidden_n=$(wc -l < "$_hma_apps" 2>/dev/null)
+_hma_hidden_n=${_hma_hidden_n##* }
+_hma_added_n=$(wc -l < "$_hma_scope" 2>/dev/null)
+_hma_added_n=${_hma_added_n##* }
 log_i "HMA" "Hidden apps: $_hma_hidden_n | scope additions: $_hma_added_n"
 
 _hma_policy=$(_hma_launch_policy)
