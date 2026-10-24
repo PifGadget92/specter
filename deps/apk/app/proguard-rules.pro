@@ -1,2 +1,3 @@
 -keep class com.dpejoh.specter.Main { public static void main(java.lang.String[]); }
+-keep class com.dpejoh.specter.XposedProbe { public static void main(java.lang.String[]); }
 -dontwarn org.bouncycastle.**

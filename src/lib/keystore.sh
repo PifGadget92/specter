@@ -140,39 +140,26 @@ _ksm_inplace_from() {
   unset _kif_src _kif_dst
 }
 
-_ksm_strip_suffix() {
-  _kss_line="$1"
-  case "$_kss_line" in *!) _kss_line=${_kss_line%!} ;; *\?) _kss_line=${_kss_line%\?} ;; esac
-  printf '%s' "$_kss_line"
-  unset _kss_line
-}
-
-_ksm_pkg_ok() {
-  _kpo=$(_ksm_strip_suffix "$1")
-  if printf '%s\n' "$_kpo" | grep -qxE '[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*'; then
-    unset _kpo
-    return 0
-  fi
-  unset _kpo
-  return 1
-}
-
 _ksm_filter_pkgs() {
-  while IFS= read -r _kfp || [ -n "$_kfp" ]; do
-    [ -z "$_kfp" ] && continue
-    _ksm_pkg_ok "$_kfp" || continue
-    printf '%s\n' "$_kfp"
-  done
-  unset _kfp
+  awk '
+    {
+      sub(/\r$/, "", $0)
+      if ($0 == "") next
+      base = $0
+      sub(/[!?]$/, "", base)
+      if (base !~ /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/) next
+      print
+    }
+  '
 }
 
+# One awk pass per file: parsing the target list line-by-line in shell spawns
+# a subshell + grep per entry, which costs tens of seconds on Android.
 ksm_read_targets() {
   case "$KSM_FORMAT" in
     ini)
-      _ini_read_targets "$KSM_TARGETS" | while IFS= read -r _krt_ini; do
-        _ksm_strip_suffix "$_krt_ini"
-        printf '\n'
-      done
+      # _ini_read_targets already emits validated [target] entries.
+      _ini_read_targets "$KSM_TARGETS" | awk '{ sub(/[!?]$/, ""); if ($0 != "") print }'
       ;;
     json)
       _teesim_read_apps "$KSM_TARGETS" | _ksm_filter_pkgs
@@ -183,14 +170,16 @@ ksm_read_targets() {
       ;;
     *)
       [ -f "$KSM_TARGETS" ] || return 0
-      while IFS= read -r _krt_line || [ -n "$_krt_line" ]; do
-        [ -z "$_krt_line" ] && continue
-        case "$_krt_line" in \[*\]) continue ;; esac
-        _krt_base=$(_ksm_strip_suffix "$_krt_line")
-        _ksm_pkg_ok "$_krt_base" || continue
-        printf '%s\n' "$_krt_base"
-      done < "$KSM_TARGETS"
-      unset _krt_line _krt_base
+      awk '
+        {
+          sub(/\r$/, "", $0)
+          if ($0 == "" || $0 ~ /^\[/) next
+          base = $0
+          sub(/[!?]$/, "", base)
+          if (base !~ /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/) next
+          print base
+        }
+      ' "$KSM_TARGETS"
       ;;
   esac
 }
@@ -204,15 +193,17 @@ ksm_read_targets_raw() {
     toml) ksm_read_targets ;;
     *)
       [ -f "$KSM_TARGETS" ] || return 0
-      while IFS= read -r _krr_line || [ -n "$_krr_line" ]; do
-        [ -z "$_krr_line" ] && continue
-        case "$_krr_line" in
-          \[*\]) printf '%s\n' "$_krr_line"; continue ;;
-        esac
-        _ksm_pkg_ok "$_krr_line" || continue
-        printf '%s\n' "$_krr_line"
-      done < "$KSM_TARGETS"
-      unset _krr_line
+      awk '
+        {
+          sub(/\r$/, "", $0)
+          if ($0 == "") next
+          if ($0 ~ /^\[/) { print; next }
+          base = $0
+          sub(/[!?]$/, "", base)
+          if (base !~ /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/) next
+          print
+        }
+      ' "$KSM_TARGETS"
       ;;
   esac
 }
@@ -266,20 +257,21 @@ ksm_commit_targets() {
       ;;
     toml)
       _kct_tmp="${KSM_TARGETS}.pkgs.$$"
-      : > "$_kct_tmp"
-      while IFS= read -r _kct_line || [ -n "$_kct_line" ]; do
-        [ -z "$_kct_line" ] && continue
-        case "$_kct_line" in \[*\]) continue ;; esac
-        _kct_base=$(_ksm_strip_suffix "$_kct_line")
-        [ -n "$_kct_base" ] && printf '%s\n' "$_kct_base" >> "$_kct_tmp"
-      done < "$_kct_src"
+      awk '
+        {
+          sub(/\r$/, "", $0)
+          if ($0 == "" || $0 ~ /^\[/) next
+          sub(/[!?]$/, "", $0)
+          if ($0 != "") print
+        }
+      ' "$_kct_src" > "$_kct_tmp"
       _toml_write_scoop "$KSM_TARGETS" < "$_kct_tmp" || {
         rm -f "$_kct_tmp"
-        unset _kct_line _kct_base _kct_tmp _kct_src
+        unset _kct_tmp _kct_src
         return 1
       }
       rm -f "$_kct_tmp"
-      unset _kct_line _kct_base _kct_tmp
+      unset _kct_tmp
       ;;
     *)
       rm -f "${KSM_TARGETS}.bak"

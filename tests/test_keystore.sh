@@ -234,6 +234,8 @@ EOF
 detect_keystore_manager
 assert_eq "detect: format ini" "ini" "$KSM_FORMAT"
 assert_contains "ini read: package" "$(ksm_read_targets)" "com.google.android.gms"
+assert_eq "ini read: suffix stripped" "com.example.wallet" "$(ksm_read_targets | grep wallet)"
+assert_eq "ini read: no blank lines" "2" "$(ksm_read_targets | grep -c .)"
 _inode_ini=$(stat -c %i "$KSM_CONFIG")
 printf 'com.google.android.gms!\ncom.new.app\n' > "$TEST_ROOT/staging_ini.txt"
 ksm_commit_targets "$TEST_ROOT/staging_ini.txt"
