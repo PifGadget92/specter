@@ -53,6 +53,24 @@ _hma_merged="$_HMA_TMP/merged.json"
 
 _hma_filter_hide_list "$_hma_list" "$_hma_inst" "$_hma_apps"
 
+# Xposed modules can be installed under any package name. Detect them from
+# manifest metadata and add them to the same hidden-app template.
+if [ "$(cfg_get toggle_hma_hide_xposed 1)" = "1" ] &&
+   command -v app_process >/dev/null 2>&1 &&
+   [ -f "$_HMA_ROOT/features/xposed_scan.sh" ]; then
+  _hma_xposed=$(sh "$_HMA_ROOT/features/xposed_scan.sh" 2>/dev/null | awk -F'\t' 'NF {print $1}' || true)
+  if [ -n "$_hma_xposed" ]; then
+    {
+      cat "$_hma_apps"
+      printf '%s\n' "$_hma_xposed"
+    } | awk 'NF && !seen[$0]++' > "${_hma_apps}.xposed"
+    mv -f "${_hma_apps}.xposed" "$_hma_apps"
+    _hma_xposed_n=$(printf '%s\n' "$_hma_xposed" | grep -c . || true)
+    log_i "HMA" "Detected Xposed modules: $_hma_xposed_n"
+  fi
+  unset _hma_xposed _hma_xposed_n
+fi
+
 _hma_skip_tpl=0
 if [ ! -s "$_hma_apps" ]; then
   _hma_skip_tpl=1
