@@ -1,5 +1,13 @@
 plan "HMA-OSS config generation and merge"
 
+_hma_list_default="$REPO_ROOT/src/config/hma-hide-list.txt"
+assert_file_exists "hide list: default exists" "$_hma_list_default"
+assert_contains "hide list: Duck LSPosed entry" "$(cat "$_hma_list_default")" "org.lsposed.manager"
+assert_contains "hide list: Duck Termux entry" "$(cat "$_hma_list_default")" "com.termux"
+assert_contains "hide list: Specter KernelSU entry" "$(cat "$_hma_list_default")" "me.weishu.kernelsu"
+assert_eq "hide list: package count" "126" "$(grep -vcE '^[[:space:]]*(#|$)' "$_hma_list_default")"
+assert_eq "hide list: no duplicates" "0" "$(grep -vE '^[[:space:]]*(#|$)' "$_hma_list_default" | sort | uniq -d | wc -l | tr -d ' ')"
+
 _HMA_PY=""
 command -v python3 >/dev/null 2>&1 && _HMA_PY="python3"
 
