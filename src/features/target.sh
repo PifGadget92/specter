@@ -89,6 +89,7 @@ case "${1:-}" in
 esac
 
 _resolve_default_suffix
+: "${_def_suffix:=}" "${_customize_file:=}" "${_cust_selective:=0}"
 
 _bl_enabled=0
 [ -f "$SPECTER_DIR/blacklist_enabled" ] && [ -s "$BLACKLIST" ] && _bl_enabled=1
