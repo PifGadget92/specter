@@ -56,7 +56,10 @@ decode_substitution() {
 # -- Config env --
 cfg_get() {
   _cg_key="$1" _cg_default="$2"
-  _cg_val=$(cat "$CONFIG_DIR/val/$_cg_key.val" 2>/dev/null || true)
+  _cg_val=""
+  if [ -f "$CONFIG_DIR/val/$_cg_key.val" ]; then
+    IFS= read -r _cg_val < "$CONFIG_DIR/val/$_cg_key.val" || true
+  fi
   printf '%s' "${_cg_val:-$_cg_default}"
   unset _cg_key _cg_default _cg_val
 }
@@ -79,10 +82,12 @@ toggle_rom_fingerprint_build_type:1
 toggle_action_gms:1 toggle_action_target:1
 toggle_action_security_patch:0 toggle_action_pif:1 toggle_action_keybox:1
 toggle_action_hma:1
+toggle_action_force_target:0
+toggle_action_force_hma:0
 toggle_action_security_patch_device:1 toggle_action_security_patch_bulletin:1
 toggle_action_security_patch_synthetic:1
 toggle_action_gms_force_stop:1 toggle_action_gms_clear_data:0
-toggle_hma_target_user_apps:1 toggle_hma_live_reload:1
+toggle_hma_target_user_apps:1 toggle_hma_live_reload:1 toggle_auto_hma:1
 toggle_auto_target:1 toggle_keybox_info:1 toggle_autopif:0 toggle_autokeybox:0
 "
 

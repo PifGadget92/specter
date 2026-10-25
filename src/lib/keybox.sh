@@ -54,60 +54,88 @@ decode_keybox_serial() {
   echo "$_serial"
 }
 
-# Android has no bc, and a certificate serial does not fit in $(( )).
-_dec_mul_add() {
-  _dma_n=$1 _dma_mul=$2 _dma_add=$3
-  _dma_out="" _dma_carry=$_dma_add
-  while [ -n "$_dma_n" ]; do
-    _dma_d=${_dma_n#"${_dma_n%?}"}
-    _dma_n=${_dma_n%?}
-    _dma_prod=$((_dma_d * _dma_mul + _dma_carry))
-    _dma_out="$((_dma_prod % 10))${_dma_out}"
-    _dma_carry=$((_dma_prod / 10))
-  done
-  while [ "$_dma_carry" -gt 0 ]; do
-    _dma_out="$((_dma_carry % 10))${_dma_out}"
-    _dma_carry=$((_dma_carry / 10))
-  done
-  printf '%s' "${_dma_out:-0}"
-  unset _dma_n _dma_mul _dma_add _dma_out _dma_carry _dma_d _dma_prod
+hex_to_dec() {
+  # Certificate serials are wider than 64 bits, so keep the big-integer
+  # conversion in awk instead of a per-digit shell loop with subshells.
+  awk -v h="$1" '
+    BEGIN {
+      h = tolower(h)
+      out = "0"
+      for (i = 1; i <= length(h); i++) {
+        d = index("0123456789abcdef", substr(h, i, 1)) - 1
+        if (d < 0) { print ""; exit 1 }
+        carry = d
+        res = ""
+        for (j = length(out); j >= 1; j--) {
+          x = (substr(out, j, 1) + 0) * 16 + carry
+          res = (x % 10) res
+          carry = int(x / 10)
+        }
+        while (carry > 0) {
+          res = (carry % 10) res
+          carry = int(carry / 10)
+        }
+        out = res
+      }
+      print out
+    }
+  '
 }
 
-hex_to_dec() {
-  _htd=$(printf '%s' "$1" | tr 'A-F' 'a-f' | sed 's/^0*//')
-  [ -n "$_htd" ] || { printf '%s' 0; unset _htd; return 0; }
-  _htd_dec=0
-  while [ -n "$_htd" ]; do
-    _htd_c=${_htd%"${_htd#?}"}
-    _htd=${_htd#?}
-    case $_htd_c in
-      a) _htd_c=10 ;; b) _htd_c=11 ;; c) _htd_c=12 ;;
-      d) _htd_c=13 ;; e) _htd_c=14 ;; f) _htd_c=15 ;;
-    esac
-    _htd_dec=$(_dec_mul_add "$_htd_dec" 16 "$_htd_c")
-  done
-  printf '%s' "$_htd_dec"
-  unset _htd _htd_dec _htd_c
+# Shared catalog fetch. keybox.sh and keybox_info.sh run back to back in the
+# action pipeline; a short cache keeps them from downloading it twice.
+keybox_catalog() {
+  _kc_cache="$SPECTER_DIR/cache/keybox_catalog.json"
+  _kc_ttl="${KEYBOX_CATALOG_TTL:-300}"
+  if [ -s "$_kc_cache" ]; then
+    _kc_age=$(( $(date +%s) - $(stat -c %Y "$_kc_cache" 2>/dev/null || echo 0) ))
+    if [ "$_kc_age" -ge 0 ] && [ "$_kc_age" -lt "$_kc_ttl" ]; then
+      cat "$_kc_cache"
+      unset _kc_cache _kc_ttl _kc_age
+      return 0
+    fi
+  fi
+  _kc_json=$(download "$CATALOG_URL" 2>/dev/null) || _kc_json=""
+  if [ -n "$_kc_json" ]; then
+    ensure_dir "$SPECTER_DIR/cache"
+    printf '%s' "$_kc_json" > "$_kc_cache" 2>/dev/null || true
+    printf '%s' "$_kc_json"
+    unset _kc_cache _kc_ttl _kc_age _kc_json
+    return 0
+  fi
+  unset _kc_cache _kc_ttl _kc_age _kc_json
+  return 1
 }
 
 check_google_revocation() {
   _gr_serial=$1
-  _gr_resp=$(download "$GOOGLE_REVOCATION_URL" 2>/dev/null) || _gr_resp=""
-  _gr_list=/tmp/gr_$$.lst
-  [ -d /data/local/tmp ] && _gr_list=/data/local/tmp/gr_$$.lst
-  cat > "$_gr_list" <<EOF
+  _gr_cache="$SPECTER_DIR/cache/google_revocation.json"
+  _gr_ttl="${GOOGLE_REVOCATION_TTL:-3600}"
+  _gr_file=""
+  if [ -s "$_gr_cache" ]; then
+    _gr_age=$(( $(date +%s) - $(stat -c %Y "$_gr_cache" 2>/dev/null || echo 0) ))
+    if [ "$_gr_age" -ge 0 ] && [ "$_gr_age" -lt "$_gr_ttl" ]; then
+      _gr_file="$_gr_cache"
+    fi
+  fi
+  if [ -z "$_gr_file" ]; then
+    _gr_resp=$(download "$GOOGLE_REVOCATION_URL" 2>/dev/null) || _gr_resp=""
+    if [ -n "$_gr_resp" ]; then
+      ensure_dir "$SPECTER_DIR/cache"
+      cat > "$_gr_cache" <<EOF
 $_gr_resp
 EOF
-  if ! grep -q '"entries"' "$_gr_list"; then
-    rm -f "$_gr_list"
-    unset _gr_serial _gr_resp _gr_list
+      _gr_file="$_gr_cache"
+    fi
+  fi
+  if [ -z "$_gr_file" ] || ! grep -q '"entries"' "$_gr_file"; then
+    unset _gr_serial _gr_cache _gr_ttl _gr_file _gr_resp _gr_age
     return 1
   fi
   _gr_dec=$(hex_to_dec "$_gr_serial")
   _gr_rc=1
-  tr '"' '\n' < "$_gr_list" | grep -Fxq "$_gr_dec" && _gr_rc=0
-  rm -f "$_gr_list"
-  unset _gr_serial _gr_resp _gr_dec _gr_list
+  grep -Fq "\"$_gr_dec\"" "$_gr_file" && _gr_rc=0
+  unset _gr_serial _gr_cache _gr_ttl _gr_file _gr_resp _gr_age _gr_dec
   return $_gr_rc
 }
 
@@ -133,26 +161,46 @@ keybox_is_softbanned() {
 # with source/version. $1 = full catalog JSON. stdout: preferred pool.
 keybox_prefer_active() {
   _kpa_hist="$1"
-  _kpa_active=""
-  _kpa_soft=""
-  while IFS= read -r _kpa_entry || [ -n "$_kpa_entry" ]; do
-    [ -z "$_kpa_entry" ] && continue
-    _kpa_src=$(echo "$_kpa_entry" | sed 's/.*"source":"\([^"]*\)".*/\1/')
-    _kpa_ver=$(echo "$_kpa_entry" | sed 's/.*"version":"\([^"]*\)".*/\1/')
-    if keybox_is_softbanned "$_kpa_hist" "$_kpa_src" "$_kpa_ver"; then
-      _kpa_soft="${_kpa_soft}${_kpa_entry}
-"
-    else
-      _kpa_active="${_kpa_active}${_kpa_entry}
-"
-    fi
-  done
-  if [ -n "$_kpa_active" ]; then
-    printf '%s' "$_kpa_active"
-  else
-    printf '%s' "$_kpa_soft"
-  fi
-  unset _kpa_hist _kpa_active _kpa_soft _kpa_entry _kpa_src _kpa_ver
+  KEYBOX_CATALOG="$_kpa_hist" awk '
+    function field(obj, key,   r) {
+      if (!match(obj, "\"" key "\":\"[^\"]*\"")) return ""
+      r = substr(obj, RSTART, RLENGTH)
+      sub("^\"" key "\":\"", "", r)
+      sub("\"$", "", r)
+      return r
+    }
+    BEGIN {
+      hist = ENVIRON["KEYBOX_CATALOG"]
+      if (match(hist, /"entries":\[[^]]*\]/)) {
+        hist = substr(hist, RSTART, RLENGTH)
+      } else {
+        hist = ""
+      }
+      while (match(hist, /\{[^{}]*\}/)) {
+        obj = substr(hist, RSTART, RLENGTH)
+        hist = substr(hist, RSTART + RLENGTH)
+        src = field(obj, "source")
+        ver = field(obj, "version")
+        if (src != "" && ver != "") {
+          soft[src SUBSEP ver] = (obj ~ /"softbanned":true/) ? 1 : 0
+        }
+      }
+    }
+    {
+      src = field($0, "source")
+      ver = field($0, "version")
+      if (((src SUBSEP ver) in soft) && soft[src, ver]) {
+        softout = softout $0 "\n"
+      } else {
+        activeout = activeout $0 "\n"
+      }
+    }
+    END {
+      if (activeout != "") printf "%s", activeout
+      else printf "%s", softout
+    }
+  '
+  unset _kpa_hist
 }
 
 # Latest version for PROVIDER from catalog, preferring non-softbanned and non-revoked.

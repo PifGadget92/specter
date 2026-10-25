@@ -28,16 +28,11 @@ _pif_validate_fingerprint() {
 _first_boot=0
 [ "$SPECTER_FIRST_BOOT" = "1" ] && _first_boot=1
 [ -f "$SPECTER_DIR/.first_boot_pending" ] && _first_boot=1
+_force_target=$(cfg_get toggle_action_force_target 0)
+_force_hma=$(cfg_get toggle_action_force_hma 0)
 
-# The block below pipes stdout through tee, so a terminal test there would be
-# dead. getevent does not need a terminal, and the WebUI shows prompt lines
-# while the action waits, so prompt whenever volume keys can be read.
-if [ "$_first_boot" = "0" ] && command -v getevent >/dev/null 2>&1; then
-  _action_prompt=1
-else
-  _action_prompt=0
-fi
-
+# The action is intentionally non-interactive. Volume-key prompts blocked the
+# WebUI for 10/7 seconds; setup choices live in the WebUI settings instead.
 {
   log_i "ACTION" "Running full integrity pipeline"
 
@@ -51,11 +46,15 @@ fi
     fi
   }
 
-  _feature_should_run "target" && {
+  if _feature_should_run "target"; then
     log_u "ACTION" ""
     log_u "ACTION" "-> App Targeting:"
-    sh "$MODDIR/features/target.sh" --merge || true
-  }
+    if [ "$_first_boot" = "1" ] || [ "$_force_target" = "1" ] || [ "$(cfg_get toggle_auto_target 1)" != "1" ]; then
+      sh "$MODDIR/features/target.sh" --merge || true
+    else
+      log_i "ACTION" "Auto-targeting is enabled, skipping target generation"
+    fi
+  fi
 
   _feature_should_run "security_patch" && {
     log_u "ACTION" ""
@@ -66,7 +65,7 @@ fi
   _feature_should_run "keybox" && {
     log_u "ACTION" ""
     log_u "ACTION" "-> Keybox:"
-    sh "$MODDIR/features/keybox.sh" || true
+    sh "$MODDIR/features/keybox.sh" --if-needed || true
   }
 
   if _feature_should_run "pif"; then
@@ -76,22 +75,10 @@ fi
     if [ -z "$_pif_name" ]; then
       if [ "$_first_boot" = "1" ]; then
         log_i "ACTION" "PIF not found, first boot suppress"
-      elif [ "$_action_prompt" = "1" ]; then
-        log_u "ACTION" ""
-        log_u "ACTION" "PIF not found — Press Volume UP to install, DOWN to skip..."
-        _ap_key=$(timeout 10 getevent -l 2>/dev/null | grep -oE "KEY_VOLUME(UP|DOWN)" | head -1)
-        if [ "$_ap_key" = "KEY_VOLUMEUP" ]; then
-          install_module_from_github "KOWX712/PlayIntegrityFix" "Play Integrity Fix" || \
-            log_e "ACTION" "PIF install failed"
-          echo "PIF installed — reboot before running autopif"
-          _pif_installed=1
-        else
-          echo "PIF install skipped"
-        fi
-        unset _ap_key
       else
-        log_w "ACTION" "PIF not found, auto-install skipped (run from terminal or install manually)"
+        log_w "ACTION" "PIF not installed, skipping fingerprint update"
       fi
+      _pif_skip=1
     elif [ "$_first_boot" = "1" ]; then
       log_u "ACTION" ""
       log_u "ACTION" "PIF found, first boot - checking existing fingerprint validity"
@@ -104,56 +91,54 @@ fi
       _pif_skip=1
     fi
     unset _pif_name
-    if [ -z "$_pif_installed" ] && [ -z "$_pif_skip" ] && [ -f "$MODDIR/features/pif.sh" ]; then
+    if [ -z "$_pif_skip" ] && [ -f "$MODDIR/features/pif.sh" ]; then
       sh "$MODDIR/features/pif.sh" || true
     fi
   fi
 
-  _feature_should_run "hma" && {
+  if _feature_should_run "hma"; then
     log_u "ACTION" ""
     log_u "ACTION" "-> HMA-OSS Config:"
-    SPECTER_HMA_NO_UI_RELOAD=1 sh "$MODDIR/features/hma.sh" || true
+    _hma_config_ok=0
+    for _hma_config in "$HMAOSS_BASE"/hide_my_applist*/config.json; do
+      [ -s "$_hma_config" ] && { _hma_config_ok=1; break; }
+    done
+    if [ "$_first_boot" = "1" ] || [ "$_force_hma" = "1" ] || [ "$_hma_config_ok" != "1" ] || [ "$(cfg_get toggle_auto_hma 1)" != "1" ]; then
+      [ "$_hma_config_ok" != "1" ] && log_w "ACTION" "HMA config missing, regenerating"
+      SPECTER_HMA_NO_UI_RELOAD=1 sh "$MODDIR/features/hma.sh" || true
 
-    _hma_policy=$(_hma_launch_policy)
-    _do_launch=0
+      _hma_policy=$(_hma_launch_policy)
+      _do_launch=0
 
-    if [ "$_first_boot" = "1" ]; then
-      log_u "ACTION" "HMA-OSS launch skipped on first boot"
-    elif [ "$_hma_policy" = "open" ]; then
-      log_u "ACTION" "Auto-launching HMA-OSS (policy: auto-accept)..."
-      _do_launch=1
-    elif [ "$_hma_policy" = "skip" ]; then
-      log_u "ACTION" "HMA-OSS launch skipped (policy: auto-refuse)"
-      log_u "ACTION" "Config written; reboot or open HMA-OSS to apply"
-    elif [ "$_action_prompt" = "1" ]; then
-      log_u "ACTION" ""
-      log_u "ACTION" "HMA-OSS app must open to apply config — open now?"
-      log_u "ACTION" "Press Volume UP to open, DOWN to skip (7s timeout)..."
-      _hma_key=$(timeout 7 getevent -l 2>/dev/null | grep -oE "KEY_VOLUME(UP|DOWN)" | head -1)
-      if [ "$_hma_key" = "KEY_VOLUMEUP" ]; then
-        log_u "ACTION" "Opening HMA-OSS..."
+      if [ "$_first_boot" = "1" ]; then
+        log_u "ACTION" "HMA-OSS launch skipped on first boot"
+      elif [ "$_hma_policy" = "open" ]; then
+        log_u "ACTION" "Auto-launching HMA-OSS (policy: auto-accept)..."
         _do_launch=1
-      else
-        log_u "ACTION" "HMA-OSS launch skipped"
+      elif [ "$_hma_policy" = "skip" ]; then
+        log_u "ACTION" "HMA-OSS launch skipped (policy: auto-refuse)"
         log_u "ACTION" "Config written; reboot or open HMA-OSS to apply"
-      fi
-      unset _hma_key
-    else
-      log_u "ACTION" "Config written; reboot or open HMA-OSS to apply"
-    fi
-
-    if [ "$_do_launch" = "1" ]; then
-      if [ "$(cfg_get toggle_hma_live_reload 1)" = "1" ]; then
-        _hma_request_reload /data/local/tmp || _hma_open_ui || true
       else
-        _hma_open_ui || true
+        log_u "ACTION" "Config written; open HMA-OSS or reboot to apply"
       fi
+
+      if [ "$_do_launch" = "1" ]; then
+        if [ "$(cfg_get toggle_hma_live_reload 1)" = "1" ]; then
+          _hma_request_reload /data/local/tmp || _hma_open_ui || true
+        else
+          _hma_open_ui || true
+        fi
+      fi
+      unset _hma_policy _do_launch
+    else
+      log_i "ACTION" "Auto-HMA is enabled, skipping HMA generation"
     fi
-    unset _hma_policy _do_launch
-  }
+    unset _hma_config _hma_config_ok
+  fi
+  unset _force_target _force_hma
 
   run_device_info "$MODDIR"
-  sh "$MODDIR/features/keybox_info.sh" >/dev/null 2>&1 || true
+  sh "$MODDIR/features/keybox_info.sh" --if-needed >/dev/null 2>&1 || true
   sh "$MODDIR/features/keystore_info.sh" >/dev/null 2>&1 || true
 
   [ -f "$MODDIR/module.prop.bak" ] && cp "$MODDIR/module.prop.bak" "$MODDIR/module.prop"

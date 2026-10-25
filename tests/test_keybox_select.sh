@@ -43,12 +43,41 @@ _ver_bad=$(keybox_latest_for_provider "$_CATALOG" "badprov")
 assert_eq "latest_for_provider: empty when all revoked" "" "$_ver_bad"
 
 assert_eq "hex_to_dec: issue serial" "3207438651777393527" "$(hex_to_dec 2c831c75c60ca377)"
-download() { printf '%s' '{"entries":{"10":{"status":"REVOKED"},"3207438651777393527":{"status":"REVOKED"}}}'; }
+assert_eq "hex_to_dec: 128-bit serial" "313574063671127819551733845561321004702" "$(hex_to_dec ebe82afb8b019ca17bed42839ba51e9e)"
+
+_dl_count="$TEST_ROOT/downloads"
+: > "$_dl_count"
+download() { echo x >> "$_dl_count"; printf '%s' "$_CATALOG"; }
+_cat1=$(keybox_catalog)
+_cat2=$(keybox_catalog)
+assert_contains "catalog cache: content" "$_cat2" '"droidwin"'
+assert_eq "catalog cache: one download" "1" "$(grep -c x "$_dl_count")"
+
+: > "$_dl_count"
+download() { echo x >> "$_dl_count"; printf '%s' '{"entries":{"10":{"status":"REVOKED"},"3207438651777393527":{"status":"REVOKED"}}}'; }
 check_google_revocation 2c831c75c60ca377
 assert_eq "crl: issue serial is revoked" "0" "$?"
 check_google_revocation a
 assert_eq "crl: hex a is decimal 10" "0" "$?"
 check_google_revocation 10
 assert_eq "crl: hex 10 is not decimal 10" "1" "$?"
+assert_eq "crl cache: one download" "1" "$(grep -c x "$_dl_count")"
+
+# --- keybox.sh --if-needed skips a healthy installed keybox ---
+bootstrap
+source_libs
+mk_module tricky_store "Tricky Store"
+detect_keystore_manager
+printf '<keybox/>\n' > "$KSM_KEYBOX"
+_ki_info="$TEST_ROOT/keybox_info.json"
+printf '{\n  "installed": true,\n  "source": "TAKR",\n  "source_version": "32",\n  "revoked": false,\n  "softbanned": false\n}\n' > "$_ki_info"
+sleep 1
+touch "$_ki_info"
+export SPECTER_KEYBOX_INFO="$_ki_info"
+_out=$(run_feature keybox.sh --if-needed)
+assert_contains "if-needed: healthy keybox skipped" "$_out" "Current keybox is healthy, skipping refresh"
+_out_info=$(run_feature keybox_info.sh --if-needed)
+assert_contains "if-needed: current info skipped" "$_out_info" "Keybox info is current, skipping refresh"
+unset SPECTER_KEYBOX_INFO
 
 done_testing
