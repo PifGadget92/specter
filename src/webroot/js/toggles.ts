@@ -36,12 +36,13 @@ export function renderControlToggles() {
     const label = document.createElement('div');
     label.className = 'toggle-text';
     label.dataset.i18n = labelKey;
-    label.textContent = labelFromKey(toggle.key);
+    label.textContent = toggle.title || labelFromKey(toggle.key);
     content.appendChild(label);
 
     const hint = document.createElement('span');
     hint.className = 'supporting-text';
     hint.dataset.i18n = descKey;
+    hint.textContent = toggle.description || '';
     content.appendChild(hint);
 
     const spacer = document.createElement('div');

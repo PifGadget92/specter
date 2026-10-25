@@ -1,10 +1,7 @@
-import '@material/web/button/filled-tonal-button.js';
-import { exec, getModuleDir } from './bridge.js';
 import { getTranslation } from './i18n.js';
 import { wireRowDialog } from './toggles.js';
 import { openSubPage } from './subpage.js';
 import { cfgGet, cfgSet } from './cfg.js';
-import { shellEscape } from './utils.js';
 
 const t = (key: string, fallback: string): string => getTranslation(key) || fallback;
 
@@ -91,52 +88,18 @@ export async function openHmaDialog() {
             title: t('hma_hide_xposed', 'Hide Detected Xposed Modules'),
             description: t('hma_hide_xposed_desc', 'Reads xposedmodule metadata from installed apps and adds matches to the hide list.'),
           },
+        ],
+      },
+      {
+        title: t('hma_action_group', 'Action Behavior'),
+        items: [
           {
-            type: 'custom',
-            render: async (container) => {
-              container.innerHTML = `
-                <div class="list-item list-item--last" style="flex-direction: column; align-items: stretch; gap: 10px; cursor: default;">
-                  <div style="display: flex; align-items: center; gap: 14px;">
-                    <div class="li-icon"><md-icon aria-hidden="true">manage_search</md-icon></div>
-                    <div class="list-item-content">
-                      <div class="toggle-text">${t('hma_xposed_title', 'Detected Xposed Modules')}</div>
-                      <span class="supporting-text">${t('hma_xposed_desc', 'Manifest metadata scan across installed apps.')}</span>
-                    </div>
-                    <md-filled-tonal-button id="hma-xposed-scan">${t('hma_xposed_scan', 'Scan')}</md-filled-tonal-button>
-                  </div>
-                  <div id="hma-xposed-list" class="supporting-text" style="white-space: pre-wrap; font-family: ui-monospace, monospace; line-height: 1.5;"></div>
-                </div>
-              `;
-
-              const btn = container.querySelector('#hma-xposed-scan') as HTMLElement | null;
-              const list = container.querySelector('#hma-xposed-list') as HTMLElement | null;
-              if (!btn || !list) return;
-
-              const scan = async (refresh: boolean) => {
-                btn.setAttribute('disabled', '');
-                list.textContent = t('hma_xposed_scanning', 'Scanning installed apps...');
-                try {
-                  const moddir = getModuleDir();
-                  if (!moddir) throw new Error('module directory unavailable');
-                  const suffix = refresh ? ' --refresh' : '';
-                  const { code, stdout, stderr } = await exec(
-                    `sh ${shellEscape(moddir + '/features/xposed_scan.sh')}${suffix}`,
-                  );
-                  if (code !== 0) throw new Error(stderr.trim() || 'scan failed');
-                  const lines = stdout.split('\n').map(s => s.trim()).filter(Boolean);
-                  list.textContent = lines.length
-                    ? lines.map(line => line.replace('\t', '  ·  ')).join('\n')
-                    : t('hma_xposed_none', 'No Xposed modules detected.');
-                } catch (e) {
-                  list.textContent = e instanceof Error ? e.message : String(e);
-                } finally {
-                  btn.removeAttribute('disabled');
-                }
-              };
-
-              btn.addEventListener('click', () => scan(true));
-              await scan(false);
-            },
+            id: 'hma-force-regen',
+            key: 'toggle_action_force_hma',
+            defaultVal: '0',
+            icon: 'restart_alt',
+            title: t('hma_force_regen', 'Always Re-Generate HMA-OSS Config'),
+            description: t('hma_force_regen_desc', 'Force HMA-OSS config generation on every action run, even when Auto-Update HMA Config is enabled.'),
           },
         ],
       },
