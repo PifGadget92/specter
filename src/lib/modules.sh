@@ -1,10 +1,22 @@
 # shellcheck shell=sh
 
+_module_name() {
+  _mn_file="$1"
+  while IFS='=' read -r _mn_key _mn_val; do
+    if [ "$_mn_key" = "name" ]; then
+      printf '%s\n' "$_mn_val"
+      break
+    fi
+  done < "$_mn_file"
+  unset _mn_file _mn_key _mn_val
+  return 0
+}
+
 module_detect() {
   _md_id="$1"
   for _md_dir in "$MODULES_BASE/$_md_id" "${MODULES_BASE}_update/$_md_id"; do
     [ -f "$_md_dir/module.prop" ] || continue
-    grep "^name=" "$_md_dir/module.prop" 2>/dev/null | cut -d= -f2
+    _module_name "$_md_dir/module.prop"
     unset _md_id _md_dir
     return 0
   done
@@ -18,7 +30,7 @@ module_enabled() {
   [ -f "$_me_dir/module.prop" ] || _me_dir="${MODULES_BASE}_update/$_me_id"
   [ -f "$_me_dir/module.prop" ] || { unset _me_id _me_dir; return 1; }
   [ -f "$_me_dir/disable" ] && { unset _me_id _me_dir; return 1; }
-  grep "^name=" "$_me_dir/module.prop" 2>/dev/null | cut -d= -f2
+  _module_name "$_me_dir/module.prop"
   unset _me_id _me_dir
   return 0
 }

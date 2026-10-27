@@ -66,6 +66,7 @@ while true; do
 
   for _task_line in keybox_info:keybox_info.sh:21600:toggle_keybox_info \
                     auto_target:auto_target.sh:300:toggle_auto_target \
+                    hma:hma.sh:21600:toggle_auto_hma \
                     autopif:pif.sh:86400:toggle_autopif \
                     autokeybox:keybox.sh:86400:toggle_autokeybox; do
     _name="${_task_line%%:*}"
@@ -75,7 +76,11 @@ while true; do
     _default_interval="${_rest%%:*}"
     _toggle="${_rest#*:}"
 
-    [ "$(cfg_get "$_toggle" 1)" = "0" ] && continue
+    _toggle_default=1
+    case "$_toggle" in
+      toggle_autopif|toggle_autokeybox) _toggle_default=0 ;;
+    esac
+    [ "$(cfg_get "$_toggle" "$_toggle_default")" = "0" ] && continue
 
     _last_run=$(cat "$TASKS_DIR/${_name}_last" 2>/dev/null || echo "0")
     _cfg_interval=$(cfg_get "${_name}_interval" "$_default_interval")
@@ -84,7 +89,11 @@ while true; do
     if [ "$_now" -ge "$((_last_run + _cfg_interval))" ]; then
       log_rotate "$SPECTER_DIR/log/sched_${_name}.log"
       log_i "SCHED" "Running $_name"
-      sh "$MODDIR/features/$_script" >"$SPECTER_DIR/log/sched_${_name}.log" 2>&1 || log_e "SCHED" "$_name failed"
+      if [ "$_name" = "hma" ]; then
+        SPECTER_HMA_NO_UI_RELOAD=1 sh "$MODDIR/features/$_script" >"$SPECTER_DIR/log/sched_${_name}.log" 2>&1 || log_e "SCHED" "$_name failed"
+      else
+        sh "$MODDIR/features/$_script" >"$SPECTER_DIR/log/sched_${_name}.log" 2>&1 || log_e "SCHED" "$_name failed"
+      fi
       printf '%s' "$_now" > "$TASKS_DIR/${_name}_last"
 
       case "$_name" in

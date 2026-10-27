@@ -6,7 +6,10 @@ MODDIR=${0%/*}
 
 log_d "KEYBOX" "Starting keybox fetch/install"
 
-check_network || { log_e "KEYBOX" "No internet connection"; exit 1; }
+# --if-needed is used by the action button: keep a healthy installed keybox
+# instead of rotating it on every run. Manual installs run without the flag.
+_if_needed=0
+case "${1:-}" in --if-needed) _if_needed=1 ;; esac
 
 detect_keystore_manager
 ksm_available || die "No keystore manager (Tricky Store / TEESimulator / OhMyKeymint) data directory found"
@@ -39,6 +42,7 @@ if [ -n "$_custom_type" ] && [ -n "$_custom_value" ]; then
       exit 1
       ;;
     url)
+      check_network || { log_e "KEYBOX" "No internet connection"; _clear_custom; exit 1; }
       log_i "KEYBOX" "Downloading custom keybox from URL..."
 download "$_custom_value" "$TEMP_FILE" || {
   log_e "KEYBOX" "Custom URL download failed"
@@ -56,6 +60,18 @@ if decode_keybox_blob "$TEMP_FILE" "$DECODE_FILE" 2>/dev/null && [ -s "$DECODE_F
       exit 1
       ;;
   esac
+fi
+
+if [ "$_if_needed" = "1" ]; then
+  _ki_info="${SPECTER_KEYBOX_INFO:-$MODDIR/../webroot/json/keybox_info.json}"
+  if [ -f "$KSM_KEYBOX" ] && [ -f "$_ki_info" ] && [ "$_ki_info" -nt "$KSM_KEYBOX" ] &&
+     grep -q '"installed": true' "$_ki_info" &&
+     ! grep -q '"revoked": true' "$_ki_info" &&
+     ! grep -q '"softbanned": true' "$_ki_info"; then
+    log_i "KEYBOX" "Current keybox is healthy, skipping refresh"
+    exit 0
+  fi
+  unset _ki_info
 fi
 
 _try_keybox_url() {
@@ -106,10 +122,12 @@ _try_keybox_url() {
   exit 0
 }
 
+check_network || { log_e "KEYBOX" "No internet connection"; exit 1; }
+
 _provider=$(cat "$CONFIG_DIR/val/keybox_provider.val" 2>/dev/null || echo "auto")
 
 log_i "KEYBOX" "Fetching available keyboxes..."
-_history=$(download "$CATALOG_URL")
+_history=$(keybox_catalog || true)
 
 if [ -z "$_history" ]; then
   log_w "KEYBOX" "Catalog fetch failed, trying fallback keyboxes..."

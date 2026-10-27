@@ -89,6 +89,19 @@ export function openAutoTargetDialog() {
           },
         ],
       },
+      {
+        title: t('auto_target_action_group', 'Action Behavior'),
+        items: [
+          {
+            id: 'at-force-regen',
+            key: 'toggle_action_force_target',
+            defaultVal: '0',
+            icon: 'restart_alt',
+            title: t('auto_target_force_regen', 'Always Re-Generate Target List'),
+            description: t('auto_target_force_regen_desc', 'Force target generation on every action run, even when Auto-Targeting is enabled.'),
+          },
+        ],
+      },
     ],
   });
 }

@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   import('./keybox-ui.js').then(m => { m.wireCustomKeybox(); m.wireKeyboxInstallButton(); }).catch(() => {});
   import('./target-apps.js').then(m => m.wireTargetApps()).catch(() => {});
   import('./auto-target-ui.js').then(m => m.wireAutoTarget()).catch(() => {});
+  import('./auto-hma-ui.js').then(m => m.wireAutoHma()).catch(() => {});
   import('./autopif-ui.js').then(m => m.wireAutopif()).catch(() => {});
   import('./pif-device-ui.js').then(m => m.wirePifDevice()).catch(() => {});
   import('./autokeybox-ui.js').then(m => m.wireAutokeybox()).catch(() => {});

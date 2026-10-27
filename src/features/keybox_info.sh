@@ -8,7 +8,16 @@ log_i "KEYBOX_INFO" "Starting keybox info check"
 
 detect_keystore_manager
 KEYBOX_FILE="$KSM_KEYBOX"
-INFO_PATH="$MODDIR/../webroot/json/keybox_info.json"
+INFO_PATH="${SPECTER_KEYBOX_INFO:-$MODDIR/../webroot/json/keybox_info.json}"
+
+# --if-needed is used by the action button: reuse fresh info for the keybox
+# that is already installed instead of re-parsing the catalog and revocation.
+if [ "${1:-}" = "--if-needed" ] &&
+   [ -f "$INFO_PATH" ] && [ -f "$KEYBOX_FILE" ] && [ "$INFO_PATH" -nt "$KEYBOX_FILE" ] &&
+   grep -q '"installed": true' "$INFO_PATH"; then
+  log_i "KEYBOX_INFO" "Keybox info is current, skipping refresh"
+  exit 0
+fi
 
 ensure_dir "$(dirname "$INFO_PATH")"
 
@@ -52,7 +61,7 @@ if [ -f "$KEYBOX_FILE" ]; then
       _source="OhMyKeymint"
       _text="Default keybox"
     elif check_network; then
-      _history_json=$(download "$CATALOG_URL" 2>/dev/null)
+      _history_json=$(keybox_catalog 2>/dev/null || true)
       if [ -n "$_history_json" ]; then
         log_d "KEYBOX_INFO" "Catalog response length: ${#_history_json}"
         _provider=$(cat "$CONFIG_DIR/val/keybox_provider.val" 2>/dev/null || echo "auto")
