@@ -1,6 +1,7 @@
 plan "pif preferred + imported device seam"
 
 bootstrap
+. "$REPO_ROOT/src/lib/constants.sh"
 . "$REPO_ROOT/src/lib/pif_preferred.sh"
 
 assert_eq "inject dest" "/data/adb/pif.prop" "$(pif_prop_dest 'Play Integrity Fix [INJECT]')"

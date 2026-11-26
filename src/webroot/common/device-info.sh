@@ -29,14 +29,7 @@ _blacklist="false"; [ -f "$SPECTER_DIR/blacklist_enabled" ] && _blacklist="true"
 
 _pif_model=""
 if _pif_prop >/dev/null 2>&1; then
-  for _pif_path in \
-    "/data/adb/pif.prop" \
-    "$PIF_DIR/custom.pif.prop" \
-    "/data/adb/pif.json" \
-    "$PIF_DIR/pif.json" \
-    "$PIF_DIR/autopif.json" \
-    "$PIF_DIR/custom.pif.json"
-  do
+  while IFS= read -r _pif_path; do
     [ -f "$_pif_path" ] || continue
     case "$_pif_path" in
       *.prop)
@@ -49,7 +42,9 @@ if _pif_prop >/dev/null 2>&1; then
         ;;
     esac
     if [ -n "$_pif_manu" ] || [ -n "$_pif_modl" ]; then break; fi
-  done
+  done <<EOF
+$(pif_prop_candidates)
+EOF
   unset _pif_path
   if [ -n "$_pif_manu" ] && [ -n "$_pif_modl" ]; then
     _pif_model="${_pif_manu} ${_pif_modl}"

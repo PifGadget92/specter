@@ -24,6 +24,40 @@ FALLBACK_KEYBOXES="Yuri/8"
 : "${GMS_PROPS_FILE:=/data/system/gms_certified_props.json}"
 : "${BACKUP_DIR:=$SPECTER_DIR/backup}"
 
+pif_prop_for_module() {
+  case "$1" in
+    *Fork*) printf '%s\n' "${PIF_DIR:-/data/adb/modules/playintegrityfix}/custom.pif.prop" ;;
+    *) printf '%s\n' "/data/adb/pif.prop" ;;
+  esac
+}
+
+pif_prop_candidates() {
+  _ppc_own=""
+  if [ -f "$PIF_DIR/module.prop" ]; then
+    _ppc_name=$(grep '^name=' "$PIF_DIR/module.prop" 2>/dev/null | cut -d= -f2-)
+    if [ -n "$_ppc_name" ]; then
+      _ppc_own=$(pif_prop_for_module "$_ppc_name")
+    fi
+    unset _ppc_name
+  fi
+  if [ -n "$_ppc_own" ]; then
+    printf '%s\n' "$_ppc_own"
+  fi
+  for _ppc_p in \
+    "/data/adb/pif.prop" \
+    "$PIF_DIR/custom.pif.prop" \
+    "$PIF_DIR/pif.prop" \
+    "/data/adb/pif.json" \
+    "$PIF_DIR/pif.json" \
+    "$PIF_DIR/autopif.json" \
+    "$PIF_DIR/custom.pif.json"; do
+    if [ "$_ppc_p" != "$_ppc_own" ]; then
+      printf '%s\n' "$_ppc_p"
+    fi
+  done
+  unset _ppc_own _ppc_p
+}
+
 # -- OhMyKeymint (OMK) paths (defaults, overridable by env) --
 : "${OMK_MODULE:=$MODULES_BASE/oh_my_keymint}"
 : "${OMK_DIR:=/data/misc/keystore/omk}"

@@ -22,10 +22,7 @@ pif_prop_valid() {
 
 # $1 = module name (from module.prop name=)
 pif_prop_dest() {
-  case "$1" in
-    *Fork*) printf '%s\n' "${PIF_DIR:-/data/adb/modules/playintegrityfix}/custom.pif.prop" ;;
-    *) printf '%s\n' "/data/adb/pif.prop" ;;
-  esac
+  pif_prop_for_module "$1"
 }
 
 : "${PIF_CANARY_DEVICES:=Pixel 6|oriole_beta

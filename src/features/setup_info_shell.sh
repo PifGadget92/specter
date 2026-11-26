@@ -93,13 +93,7 @@ _module_enabled() {
 }
 
 _pif_read() {
-  for _pr_file in \
-    "/data/adb/pif.prop" \
-    "$PIF_DIR/custom.pif.prop" \
-    "/data/adb/pif.json" \
-    "$PIF_DIR/pif.json" \
-    "$PIF_DIR/autopif.json" \
-    "$PIF_DIR/custom.pif.json"; do
+  while IFS= read -r _pr_file; do
     [ -f "$_pr_file" ] || continue
     case "$_pr_file" in
       *.prop)
@@ -115,7 +109,9 @@ _pif_read() {
       unset _pr_file _pr_val
       return 0
     fi
-  done
+  done <<EOF
+$(pif_prop_candidates)
+EOF
   unset _pr_file _pr_val
   return 1
 }

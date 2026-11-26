@@ -399,8 +399,13 @@ public final class SetupProbe {
         return "";
     }
 
-    private static String pifValue(String key) {
-        String[] paths = {
+    private static String[] pifPaths() {
+        String own = "/data/adb/pif.prop";
+        File moduleProp = new File(MODULES + "/playintegrityfix/module.prop");
+        if (moduleProp.isFile() && propText(read(moduleProp), "name").contains("Fork")) {
+            own = MODULES + "/playintegrityfix/custom.pif.prop";
+        }
+        String[] legacy = {
                 "/data/adb/pif.prop",
                 MODULES + "/playintegrityfix/custom.pif.prop",
                 "/data/adb/pif.json",
@@ -408,7 +413,16 @@ public final class SetupProbe {
                 MODULES + "/playintegrityfix/autopif.json",
                 MODULES + "/playintegrityfix/custom.pif.json",
         };
-        for (String path : paths) {
+        List<String> paths = new ArrayList<>();
+        paths.add(own);
+        for (String path : legacy) {
+            if (!path.equals(own)) paths.add(path);
+        }
+        return paths.toArray(new String[0]);
+    }
+
+    private static String pifValue(String key) {
+        for (String path : pifPaths()) {
             File file = new File(path);
             if (!file.isFile()) continue;
             String text = read(file);
