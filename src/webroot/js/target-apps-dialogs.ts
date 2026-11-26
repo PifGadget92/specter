@@ -3,25 +3,13 @@
 // openTeesimModeDialog only shells out to teesim_mode.sh.
 import { exec, getModuleDir, spawnCommand } from './bridge.js';
 import { cfgSet } from './cfg.js';
-import { escapeHtml, shellEscape } from './utils.js';
+import { afterNextPaint, escapeHtml, shellEscape } from './utils.js';
 import { showToast, showLoadingToast, updateToast } from './toast.js';
 import { t } from './i18n.js';
 import { showDialog } from './dialog.js';
 import { openSubPage, type SubPageInstance } from './subpage.js';
 import { openAppRegenerateDialog } from './app-list-dialogs.js';
 import type { AppListEntry } from './app-list-model.js';
-
-/** Resolve after two frames, once the disabled button and toast have painted. */
-function afterNextPaint(): Promise<void> {
-    return new Promise(resolve => {
-        if (typeof requestAnimationFrame !== 'function') {
-            resolve();
-            return;
-        }
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    });
-}
-
 
 export interface TargetDialogsContext {
   apps: AppListEntry[];

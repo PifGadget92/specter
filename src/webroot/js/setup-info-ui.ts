@@ -2,7 +2,8 @@ import { openSubPage } from './subpage.js';
 import { t } from './i18n.js';
 import { afterPaint, escapeHtml, fetchJson } from './utils.js';
 import './ui/sp-skeleton.js';
-import { runScript } from './bridge.js';
+import { spawnScriptAndWait } from './bridge.js';
+import { runAsyncReload } from './async-reload.js';
 import { appendInfoSection, dash, formatDate, type ValueSpec } from './info-page.js';
 import type { SetupInfoJson, SetupInfoModule } from './types.js';
 
@@ -115,11 +116,7 @@ function buildPage(host: HTMLElement, data: SetupInfoJson | null, loading: boole
 }
 
 async function loadSetupInfo(): Promise<SetupInfoJson | null> {
-  try {
-    await runScript('setup_info.sh', 'feature');
-  } catch (err) {
-    console.warn('Setup info script failed:', err);
-  }
+  await spawnScriptAndWait('setup_info.sh', 'feature');
   return fetchJson<SetupInfoJson>('./json/setup_info.json');
 }
 
@@ -131,38 +128,42 @@ export async function openSetupPage(): Promise<void> {
   let loading = true;
   let hostEl: HTMLElement | null = null;
 
+  const refreshButton = document.createElement('md-icon-button');
+  refreshButton.id = 'setup-info-refresh';
+  refreshButton.setAttribute('aria-label', t('common_refresh', 'Refresh'));
+  refreshButton.innerHTML = '<md-icon aria-hidden="true">refresh</md-icon>';
+
   const render = () => {
     if (hostEl) buildPage(hostEl, latest, loading);
   };
 
-  const refresh = async () => {
-    if (!latest) {
-      loading = true;
-      render();
-    }
-    const button = document.getElementById('setup-info-refresh') as HTMLElement | null;
-    if (button) button.setAttribute('disabled', '');
-    try {
-      const next = await loadSetupInfo();
-      if (next) latest = next;
-    } finally {
-      loading = false;
-      render();
-      if (button) button.removeAttribute('disabled');
-    }
-  };
+  const refresh = () => runAsyncReload(
+    refreshButton,
+    async () => {
+      if (!latest) {
+        loading = true;
+        render();
+      }
+      try {
+        const next = await loadSetupInfo();
+        if (next) latest = next;
+        else if (latest) throw new Error('Setup snapshot unavailable');
+      } finally {
+        loading = false;
+        render();
+      }
+    },
+    'Setup refresh',
+  );
+
+  refreshButton.addEventListener('click', () => { void refresh(); });
 
   await openSubPage({
     id: 'setup-info',
     title: t('setup_title', 'Setup'),
     description: t('setup_desc', 'Device, keystore backend, installed modules, and Specter feature configuration.'),
     headerAction: (container) => {
-      const button = document.createElement('md-icon-button');
-      button.id = 'setup-info-refresh';
-      button.setAttribute('aria-label', t('common_refresh', 'Refresh'));
-      button.innerHTML = '<md-icon aria-hidden="true">refresh</md-icon>';
-      button.addEventListener('click', () => { void refresh(); });
-      container.appendChild(button);
+      container.appendChild(refreshButton);
     },
     groups: [{
       items: [{

@@ -56,6 +56,7 @@ vi.mock('./subpage.js', () => ({ openSubPage }));
 vi.mock('./bridge.js', () => ({ exec, spawnCommand, getModuleDir }));
 vi.mock('./toast.js', () => ({ showToast, showLoadingToast, updateToast, closeToast }));
 vi.mock('./utils.js', () => ({
+  afterNextPaint: () => new Promise<void>(resolve => setTimeout(resolve, 0)),
   afterPaint,
   fetchJson,
   shellEscape: (value: string) => `'${value}'`,

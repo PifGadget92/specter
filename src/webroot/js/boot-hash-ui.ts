@@ -3,20 +3,9 @@ import { t } from './i18n.js';
 import { openSubPage } from './subpage.js';
 import { showToast, showLoadingToast, updateToast } from './toast.js';
 import { exec, getModuleDir, spawnCommand } from './bridge.js';
-import { afterPaint, escapeHtml, shellEscape } from './utils.js';
+import { afterNextPaint, afterPaint, escapeHtml, shellEscape } from './utils.js';
 import './ui/sp-skeleton.js';
 
-
-/** Resolve after two frames, once the disabled FAB and toast have painted. */
-function afterNextPaint(): Promise<void> {
-  return new Promise(resolve => {
-    if (typeof requestAnimationFrame !== 'function') {
-      resolve();
-      return;
-    }
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
 
 export async function openBootHashSubpage() {
   const moddir = getModuleDir();

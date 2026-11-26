@@ -76,6 +76,20 @@ export function runScript(scriptName: string, type = 'feature'): Promise<ScriptR
   });
 }
 
+export function spawnScriptAndWait(scriptName: string, type = 'feature'): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawnScript(scriptName, type);
+    child.on('exit', (code?: number) => {
+      if (typeof code === 'number' && code !== 0) {
+        reject(new ScriptError({ success: false, output: '', rawOutput: String(code) }));
+        return;
+      }
+      resolve();
+    });
+    child.on('error', (e: unknown) => reject(e));
+  });
+}
+
 export function exec(command: string): Promise<ExecResult> {
   return new Promise((resolve, reject) => {
     if (!window.ksu?.exec) { reject(new BridgeError('NO_BRIDGE', 'no-bridge')); return; }

@@ -9,6 +9,7 @@ import {
   type ValueSpec,
 } from './info-page.js';
 import { refreshKeyboxStatus, refreshKeyboxWatch } from './device.js';
+import { runAsyncReload } from './async-reload.js';
 import type { KeyboxInfoJson } from './types.js';
 import './ui/sp-skeleton.js';
 
@@ -193,28 +194,28 @@ export async function openKeyboxInfoPage(): Promise<void> {
     });
   };
 
-  const refresh = async () => {
-    const button = document.getElementById('keybox-info-refresh') as HTMLElement | null;
-    if (button) button.setAttribute('disabled', '');
-    try {
+  const refreshButton = document.createElement('md-icon-button');
+  refreshButton.id = 'keybox-info-refresh';
+  refreshButton.setAttribute('aria-label', t('common_refresh', 'Refresh'));
+  refreshButton.innerHTML = '<md-icon aria-hidden="true">refresh</md-icon>';
+
+  const refresh = () => runAsyncReload(
+    refreshButton,
+    async () => {
       latest = await refreshKeyboxWatch(0);
       if (hostEl) render(hostEl, latest);
-    } finally {
-      if (button) button.removeAttribute('disabled');
-    }
-  };
+    },
+    'Keybox details refresh',
+  );
+
+  refreshButton.addEventListener('click', () => { void refresh(); });
 
   const page = await openSubPage({
     id: 'keybox-info',
     title: t('keybox_info_title', 'Keybox details'),
     description: t('keybox_info_desc', 'Installed keybox identity, health, and file information.'),
     headerAction: (container) => {
-      const button = document.createElement('md-icon-button');
-      button.id = 'keybox-info-refresh';
-      button.setAttribute('aria-label', t('common_refresh', 'Refresh'));
-      button.innerHTML = '<md-icon aria-hidden="true">refresh</md-icon>';
-      button.addEventListener('click', () => { void refresh(); });
-      container.appendChild(button);
+      container.appendChild(refreshButton);
     },
     groups: [{
       items: [{

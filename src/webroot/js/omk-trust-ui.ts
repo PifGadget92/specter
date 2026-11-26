@@ -1,20 +1,9 @@
 import { exec, getModuleDir, spawnCommand } from './bridge.js';
 import { t } from './i18n.js';
 import { showToast, showLoadingToast, updateToast } from './toast.js';
-import { afterPaint, shellEscape, wireRowActivation } from './utils.js';
+import { afterNextPaint, afterPaint, shellEscape, wireRowActivation } from './utils.js';
 import { runAction } from './actions.js';
 import { openSubPage } from './subpage.js';
-
-/** Resolve after two frames, once the disabled FAB and toast have painted. */
-function afterNextPaint(): Promise<void> {
-  return new Promise(resolve => {
-    if (typeof requestAnimationFrame !== 'function') {
-      resolve();
-      return;
-    }
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
 
 function renderOmkRestartRow(
   container: HTMLElement,

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   fetchJson: vi.fn(),
   runScript: vi.fn(),
-  spawnScript: vi.fn(),
+  spawnAndWait: vi.fn(async () => {}),
   appendToOutput: vi.fn(),
   getModulesSnapshot: vi.fn(),
   showToast: vi.fn(),
@@ -12,7 +12,8 @@ const state = vi.hoisted(() => ({
 
 vi.mock('./bridge.js', () => ({
   runScript: state.runScript,
-  spawnScript: state.spawnScript,
+  spawnScript: vi.fn(),
+  spawnScriptAndWait: state.spawnAndWait,
 }));
 
 vi.mock('./utils.js', async () => {
@@ -60,20 +61,12 @@ function dom() {
   `;
 }
 
-function fakeChild(event: 'exit' | 'error') {
-  return {
-    on(ev: string, fn: (e?: unknown) => void) {
-      if (ev === event) setTimeout(() => fn(new Error('child fail')), 0);
-    },
-  };
-}
-
 beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   routes = {};
   state.fetchJson.mockReset().mockImplementation(async (url: string) => routes[url] ?? null);
   state.runScript.mockReset().mockResolvedValue({ success: true, output: '', rawOutput: '' });
-  state.spawnScript.mockReset().mockReturnValue(fakeChild('exit'));
+  state.spawnAndWait.mockReset().mockResolvedValue(undefined);
   state.appendToOutput.mockReset();
   state.getModulesSnapshot.mockReset().mockResolvedValue(null);
   state.showToast.mockReset();
@@ -190,12 +183,12 @@ describe('recomputeKeyboxStatus', () => {
   it('runs the info script and re-reads the snapshot on exit', async () => {
     routes = { [KEYBOX_URL]: RAWBIN_KB };
     const data = await recomputeKeyboxStatus();
-    expect(state.spawnScript).toHaveBeenCalledWith('keybox_info.sh', 'feature');
+    expect(state.spawnAndWait).toHaveBeenCalledWith('keybox_info.sh', 'feature');
     expect(data).toEqual(RAWBIN_KB);
   });
 
   it('rejects when the info script errors', async () => {
-    state.spawnScript.mockReturnValue(fakeChild('error'));
+    state.spawnAndWait.mockRejectedValue(new Error('child fail'));
     await expect(recomputeKeyboxStatus()).rejects.toThrow('child fail');
   });
 });
@@ -208,14 +201,14 @@ describe('keybox refresh button', () => {
     const btn = document.getElementById('kb-refresh-btn')!;
     btn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await vi.waitFor(() => {
-      expect(state.spawnScript).toHaveBeenCalledTimes(1);
+      expect(state.spawnAndWait).toHaveBeenCalledTimes(1);
       expect(btn.hasAttribute('disabled')).toBe(false);
-      expect(btn.classList.contains('kb-refresh-btn--busy')).toBe(false);
+      expect(btn.classList.contains('reload-btn--busy')).toBe(false);
     });
   });
 
   it('toasts and restores the button when the recompute fails', async () => {
-    state.spawnScript.mockReturnValue(fakeChild('error'));
+    state.spawnAndWait.mockRejectedValue(new Error('child fail'));
     wireKeyboxRefreshButton();
     const btn = document.getElementById('kb-refresh-btn')!;
     btn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));

@@ -477,6 +477,39 @@ describe('spawnScript', () => {
   })
 })
 
+describe('spawnScriptAndWait', () => {
+  async function start() {
+    vi.resetModules()
+    const b = await import('./bridge.js')
+    const ksu = mockKsu()
+    mockFetchJson({ MODDIR: '/data/adb/modules/specter' })
+    await b.initBridge()
+    const promise = b.spawnScriptAndWait('run.sh', 'feature')
+    const name = (ksu.spawn as any).mock.calls[0][3] as string
+    return { promise, child: (window as any)[name] as any }
+  }
+
+  it('resolves after the spawned child exits cleanly', async () => {
+    const { promise, child } = await start()
+    child.emit('exit', 0)
+    await expect(promise).resolves.toBeUndefined()
+  })
+
+  it('rejects on a non-zero exit', async () => {
+    const { promise, child } = await start()
+    const rejection = expect(promise).rejects.toThrow('Script execution failed')
+    child.emit('exit', 1)
+    await rejection
+  })
+
+  it('rejects when the child errors', async () => {
+    const { promise, child } = await start()
+    const rejection = expect(promise).rejects.toThrow('child boom')
+    child.emit('error', new Error('child boom'))
+    await rejection
+  })
+})
+
 describe('spawnCommand', () => {
   async function freshBridge() {
     vi.resetModules()

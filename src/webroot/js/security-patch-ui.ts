@@ -2,23 +2,11 @@ import { exec, getModuleDir, spawnCommand } from './bridge.js';
 import { t } from './i18n.js';
 import { showToast, closeToast, showLoadingToast, updateToast } from './toast.js';
 import { API_URLS, defaultSecurityPatch } from './constants.js';
-import { afterPaint, fetchJson, shellEscape, wireRowActivation } from './utils.js';
+import { afterNextPaint, afterPaint, fetchJson, shellEscape, wireRowActivation } from './utils.js';
 import { openSubPage } from './subpage.js';
 import type { SpSettingsRow } from './ui/sp-settings-row.js';
 import type { KeystoreManagerJson } from './types.js';
 import './ui/sp-skeleton.js';
-
-
-/** Resolve after two frames, once the disabled FAB and toast have painted. */
-function afterNextPaint(): Promise<void> {
-  return new Promise(resolve => {
-    if (typeof requestAnimationFrame !== 'function') {
-      resolve();
-      return;
-    }
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
 
 function isDatePatchValue(val: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val);

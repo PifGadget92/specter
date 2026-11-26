@@ -43,6 +43,7 @@ vi.mock('./bridge.js', () => ({
 }));
 vi.mock('./cfg.js', () => ({ cfgSet }));
 vi.mock('./utils.js', () => ({
+  afterNextPaint: () => new Promise<void>(resolve => setTimeout(resolve, 0)),
   shellEscape: (v: string) => `'${v}'`,
   escapeHtml: (v: string) => v,
 }));

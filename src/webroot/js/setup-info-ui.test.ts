@@ -5,7 +5,8 @@ const state = vi.hoisted(() => ({
   host: null as HTMLElement | null,
   header: null as HTMLElement | null,
   data: null as SetupInfoJson | null,
-  run: vi.fn(async () => ({ success: true, output: '', rawOutput: '' })),
+  reload: vi.fn(async () => {}),
+  toast: vi.fn(),
 }));
 
 vi.mock('./subpage.js', () => ({
@@ -25,7 +26,11 @@ vi.mock('./subpage.js', () => ({
 }));
 
 vi.mock('./bridge.js', () => ({
-  runScript: state.run,
+  spawnScriptAndWait: state.reload,
+}));
+
+vi.mock('./toast.js', () => ({
+  showToast: state.toast,
 }));
 
 vi.mock('./utils.js', async () => {
@@ -94,11 +99,13 @@ const fixture: SetupInfoJson = {
 
 describe('setup page', () => {
   beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     state.host = null;
     state.header = null;
     state.data = fixture;
-    state.run.mockReset();
-    state.run.mockResolvedValue({ success: true, output: '', rawOutput: '' });
+    state.reload.mockReset();
+    state.reload.mockResolvedValue(undefined);
+    state.toast.mockReset();
     document.body.innerHTML = '';
   });
 
@@ -141,6 +148,37 @@ describe('setup page', () => {
     await openSetupPage();
 
     expect(sectionLabels()).toContain('TEESimulator');
+    expect(rowsIn('Device')).toContainEqual(
+      expect.objectContaining({ label: 'Android version', value: '17' }),
+    );
+  });
+
+  it('reports a failed probe instead of silently keeping the old snapshot', async () => {
+    state.reload.mockRejectedValue(new Error('probe down'));
+    await openSetupPage();
+    const refresh = state.header?.querySelector('#setup-info-refresh') as HTMLElement;
+
+    refresh.click();
+
+    await vi.waitFor(() => expect(state.toast).toHaveBeenCalledWith(
+      'Failed to update',
+      expect.objectContaining({ type: 'error' }),
+    ));
+    expect(refresh.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('reports a missing snapshot when refreshing over existing data', async () => {
+    await openSetupPage();
+    state.data = null;
+    const refresh = state.header?.querySelector('#setup-info-refresh') as HTMLElement;
+
+    refresh.click();
+
+    await vi.waitFor(() => expect(state.toast).toHaveBeenCalledWith(
+      'Failed to update',
+      expect.objectContaining({ type: 'error' }),
+    ));
+    expect(refresh.hasAttribute('disabled')).toBe(false);
     expect(rowsIn('Device')).toContainEqual(
       expect.objectContaining({ label: 'Android version', value: '17' }),
     );

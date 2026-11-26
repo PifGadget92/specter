@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   fetchJson: vi.fn(),
-  runScript: vi.fn(async () => ({ success: true, output: '', rawOutput: '' })),
+  spawnAndWait: vi.fn(async () => {}),
 }));
 
 vi.mock('./bridge.js', () => ({
-  runScript: state.runScript,
+  runScript: vi.fn(async () => ({ success: true, output: '', rawOutput: '' })),
+  spawnScript: vi.fn(),
+  spawnScriptAndWait: state.spawnAndWait,
 }));
 
 vi.mock('./utils.js', async () => {
@@ -23,7 +25,7 @@ describe('keybox watch refresh', () => {
   beforeEach(() => {
     (window as any).__keyboxInfoPromise = null;
     state.fetchJson.mockReset();
-    state.runScript.mockClear();
+    state.spawnAndWait.mockReset().mockResolvedValue(undefined);
   });
 
   it('skips the shell when the snapshot is fresh', async () => {
@@ -34,7 +36,7 @@ describe('keybox watch refresh', () => {
 
     await refreshKeyboxWatch();
 
-    expect(state.runScript).not.toHaveBeenCalled();
+    expect(state.spawnAndWait).not.toHaveBeenCalled();
   });
 
   it('runs the watch when the snapshot is stale', async () => {
@@ -49,7 +51,14 @@ describe('keybox watch refresh', () => {
 
     const data = await refreshKeyboxWatch();
 
-    expect(state.runScript).toHaveBeenCalledWith('keybox_watch.sh', 'feature');
+    expect(state.spawnAndWait).toHaveBeenCalledWith('keybox_watch.sh', 'feature');
     expect(data?.revoked).toBe(true);
+  });
+
+  it('propagates a failed watch so the page can report it', async () => {
+    state.fetchJson.mockResolvedValue({ installed: true, checked_at: '2000-01-01T00:00:00Z' });
+    state.spawnAndWait.mockRejectedValue(new Error('watch down'));
+
+    await expect(refreshKeyboxWatch()).rejects.toThrow('watch down');
   });
 });

@@ -127,3 +127,13 @@ export function afterPaint(fn: () => void, timeoutMs = 1500): void {
   }
 }
 
+export function afterNextPaint(): Promise<void> {
+  return new Promise(resolve => {
+    if (typeof requestAnimationFrame !== 'function') {
+      resolve();
+      return;
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+

@@ -17,7 +17,7 @@ import { cfgGet, cfgSet } from './cfg.js';
 import { openFileBrowser } from './file-browser.js';
 import { showConfirm } from './dialog.js';
 import { showToast, showLoadingToast, updateToast } from './toast.js';
-import { afterPaint, escapeHtml, shellEscape } from './utils.js';
+import { afterNextPaint, afterPaint, escapeHtml, shellEscape } from './utils.js';
 import { t, tf } from './i18n.js';
 import { refreshPifChooseDesc as refreshChooseDesc } from './pif-choose-desc.js';
 import { openSubPage } from './subpage.js';
@@ -33,17 +33,6 @@ const pifBotUrls = (path: string): string[] => [
   `https://gh.sevencdn.com/https://raw.githubusercontent.com/${PIF_REPO}/${path}`,
 ];
 const DEVICE_LIST_URLS = pifBotUrls('bot/device_list.json');
-
-/** Resolve after two frames, once the disabled FAB and toast have painted. */
-function afterNextPaint(): Promise<void> {
-  return new Promise(resolve => {
-    if (typeof requestAnimationFrame !== 'function') {
-      resolve();
-      return;
-    }
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
 
 const FALLBACK_CANARY_DEVICES: PifDevice[] = [
   { model: 'Pixel 6', product: 'oriole_beta' },

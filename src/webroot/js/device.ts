@@ -1,10 +1,10 @@
 import { afterPaint, fetchJson } from './utils.js';
-import { runScript, spawnScript } from './bridge.js';
+import { runScript, spawnScript, spawnScriptAndWait } from './bridge.js';
 import { appendToOutput } from './terminal.js';
 import { API_URLS } from './constants.js';
 import { getTranslation, t } from './i18n.js';
 import { getModulesSnapshot } from './modules.js';
-import { showToast } from './toast.js';
+import { runAsyncReload } from './async-reload.js';
 import type { ConflictModule, InfoJson, KeyboxInfoJson, KeystoreManagerJson } from './types.js';
 
 const HERO_CLIP = 'hero-clip';
@@ -63,25 +63,8 @@ export function wireKeyboxRefreshButton() {
   const btn = document.getElementById('kb-refresh-btn');
   if (!btn || btn.dataset.spWired) return;
   btn.dataset.spWired = '1';
-  btn.addEventListener('click', async () => {
-    btn.setAttribute('disabled', '');
-    btn.classList.add('kb-refresh-btn--busy');
-    // Paint the busy state before the bridge call. spawn() keeps the main
-    // thread free, but the exec fallback runs synchronously and would hide it.
-    await new Promise<void>(resolve => {
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    });
-    try {
-      await recomputeKeyboxStatus();
-    } catch (e) {
-      console.warn('Keybox refresh failed:', e);
-      showToast(getTranslation('toast_failed_update') || 'Failed to update', {
-        icon: 'error', type: 'error', autoCloseDelay: 3000,
-      });
-    } finally {
-      btn.removeAttribute('disabled');
-      btn.classList.remove('kb-refresh-btn--busy');
-    }
+  btn.addEventListener('click', () => {
+    void runAsyncReload(btn, recomputeKeyboxStatus, 'Keybox refresh');
   });
 }
 
@@ -137,17 +120,8 @@ export async function refreshKeyboxStatus(): Promise<KeyboxInfoJson | null> {
 }
 
 export async function recomputeKeyboxStatus(): Promise<KeyboxInfoJson | null> {
-  await runKeyboxInfoScript();
+  await spawnScriptAndWait('keybox_info.sh', 'feature');
   return refreshKeyboxStatus();
-}
-
-/** Run keybox_info.sh out of process so it cannot block the WebView thread. */
-function runKeyboxInfoScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawnScript('keybox_info.sh', 'feature');
-    child.on('exit', () => resolve());
-    child.on('error', (e: unknown) => reject(e));
-  });
 }
 
 /**
@@ -158,11 +132,7 @@ export async function refreshKeyboxWatch(maxAgeMs = 15_000): Promise<KeyboxInfoJ
   const current = await refreshKeyboxStatus();
   const checked = current?.checked_at ? Date.parse(current.checked_at) : 0;
   if (current && checked > 0 && Date.now() - checked < maxAgeMs) return current;
-  try {
-    await runScript('keybox_watch.sh', 'feature');
-  } catch (e) {
-    console.warn('Keybox watch script failed:', e);
-  }
+  await spawnScriptAndWait('keybox_watch.sh', 'feature');
   return refreshKeyboxStatus();
 }
 
